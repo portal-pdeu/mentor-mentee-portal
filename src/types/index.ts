@@ -42,14 +42,15 @@ export interface Student {
   rollNo: string;
   imageUrl: string;
   imageId: string;
+  mentorId?: string; // Add mentorId to link student with faculty mentor
   projectRequestStatus:
-    | "Pending"
-    | "Accepted"
-    | "Rejected"
-    | "NoRequest"
-    | "Waiting"
-    | "TeamPending"
-    | "TeammateRejected";
+  | "Pending"
+  | "Accepted"
+  | "Rejected"
+  | "NoRequest"
+  | "Waiting"
+  | "TeamPending"
+  | "TeammateRejected";
   IA1: number;
   IA2: number;
   EndSem: number;
@@ -81,13 +82,13 @@ export interface ProjectRequest {
   motivation: string;
   appliedAt: string;
   status:
-    | "NoRequest"
-    | "Pending"
-    | "Accepted"
-    | "Rejected"
-    | "Waiting"
-    | "TeamPending"
-    | "TeammateRejected";
+  | "NoRequest"
+  | "Pending"
+  | "Accepted"
+  | "Rejected"
+  | "Waiting"
+  | "TeamPending"
+  | "TeammateRejected";
   projectIdeaId: string;
   facultyId: string;
   studentId: string;
@@ -98,12 +99,12 @@ export interface ProjectRequest {
   teammateDocId?: string;
   teammateId?: string;
   teammateStatus?:
-    | "Pending"
-    | "Accepted"
-    | "Rejected"
-    | "NoRequest"
-    | "Waiting"
-    | "TeamPending";
+  | "Pending"
+  | "Accepted"
+  | "Rejected"
+  | "NoRequest"
+  | "Waiting"
+  | "TeamPending";
   teammateRequestMessage?: string;
   isActive: boolean;
 }

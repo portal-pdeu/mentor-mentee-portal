@@ -180,8 +180,8 @@ export default function LoginPage() {
                       layout="fill"
                       objectFit="contain"
                       className={`filter rounded-full ${theme === "dark"
-                          ? "brightness-60 contrast-110 drop-shadow-2xl drop-shadow-indigo-500/30"
-                          : "drop-shadow-md"
+                        ? "brightness-60 contrast-110 drop-shadow-2xl drop-shadow-indigo-500/30"
+                        : "drop-shadow-md"
                         }`}
                     />
                   </div>
@@ -243,8 +243,8 @@ export default function LoginPage() {
                     <div
                       key={index}
                       className={`w-2 h-2 rounded-full transition-all duration-300 ${index <= maxProgressIndex
-                          ? "bg-indigo-500 dark:bg-indigo-400 scale-110"
-                          : "bg-gray-300 dark:bg-slate-600"
+                        ? "bg-indigo-500 dark:bg-indigo-400 scale-110"
+                        : "bg-gray-300 dark:bg-slate-600"
                         }`}
                     />
                   ))}
@@ -274,142 +274,159 @@ export default function LoginPage() {
             </div>
           </div>
         )}
-        <div className="max-w-md w-full space-y-6 p-8 bg-white/90 dark:bg-slate-900/95 rounded-2xl shadow-xl dark:shadow-2xl dark:shadow-indigo-900/20 transition-all duration-300 transform hover:scale-[1.01] border border-gray-200/50 dark:border-slate-700/60 relative z-10 backdrop-blur-sm dark:backdrop-blur-md">
+
+        {/* Main Portal Title */}
+        <div className="flex flex-col items-center w-full max-w-md space-y-8">
           <div className="text-center">
-            <div className="flex items-center justify-center">
-              <div className="relative w-24 h-24 mb-2">
-                <Image
-                  src="/PDEUlogo.jpeg"
-                  alt="Logo"
-                  layout="fill"
-                  objectFit="contain"
-                  className={`filter ${theme === "dark"
-                      ? "brightness-60 contrast-110 drop-shadow-2xl drop-shadow-indigo-500/30"
-                      : "drop-shadow-md"
-                    }`}
-                />
-              </div>
-            </div>
-            <h2 className="mt-4 text-3xl font-bold text-gray-800 dark:text-slate-100 tracking-tight">
-              Welcome back
+            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-2 tracking-tight">
+              PDEU
+            </h1>
+            <h2 className="text-2xl md:text-3xl font-semibold text-indigo-600 dark:text-indigo-400 mb-1">
+              Mentor Mentee Portal
             </h2>
-            <p className="mt-2 text-sm text-indigo-600 dark:text-indigo-300">
-              Sign in to access your account
+            <p className="text-gray-600 dark:text-gray-300 text-sm">
+              Connecting mentors and mentees for academic excellence
             </p>
           </div>
 
-          {/* Root Error Display */}
-          {errors.root && (
-            <div className="bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800/50 text-red-700 dark:text-red-200 p-4 rounded-xl animate-in slide-in-from-top-2 duration-300">
-              <div className="flex items-center">
-                <FiAlertCircle className="w-5 h-5 mr-2 flex-shrink-0" />
+          {/* Login Card */}
+          <div className="w-full space-y-6 p-8 bg-white/90 dark:bg-slate-900/95 rounded-2xl shadow-xl dark:shadow-2xl dark:shadow-indigo-900/20 transition-all duration-300 transform hover:scale-[1.01] border border-gray-200/50 dark:border-slate-700/60 relative z-10 backdrop-blur-sm dark:backdrop-blur-md">
+            <div className="text-center">
+              <div className="flex items-center justify-center">
+                <div className="relative w-24 h-24 mb-2">
+                  <Image
+                    src="/PDEUlogo.jpeg"
+                    alt="Logo"
+                    layout="fill"
+                    objectFit="contain"
+                    className={`filter ${theme === "dark"
+                      ? "brightness-60 contrast-110 drop-shadow-2xl drop-shadow-indigo-500/30"
+                      : "drop-shadow-md"
+                      }`}
+                  />
+                </div>
+              </div>
+              <h2 className="mt-4 text-3xl font-bold text-gray-800 dark:text-slate-100 tracking-tight">
+                Welcome back
+              </h2>
+              <p className="mt-2 text-sm text-indigo-600 dark:text-indigo-300">
+                Sign in to access your account
+              </p>
+            </div>
+
+            {/* Root Error Display */}
+            {errors.root && (
+              <div className="bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800/50 text-red-700 dark:text-red-200 p-4 rounded-xl animate-in slide-in-from-top-2 duration-300">
+                <div className="flex items-center">
+                  <FiAlertCircle className="w-5 h-5 mr-2 flex-shrink-0" />
+                  <div>
+                    <p className="font-medium">Login Error</p>
+                    <p className="text-sm mt-1">{errors.root.message}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <form className="mt-6 space-y-6" onSubmit={handleSubmit(onSubmit)}>
+              <div className="space-y-4">
+                {/* Email Field */}
                 <div>
-                  <p className="font-medium">Login Error</p>
-                  <p className="text-sm mt-1">{errors.root.message}</p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          <form className="mt-6 space-y-6" onSubmit={handleSubmit(onSubmit)}>
-            <div className="space-y-4">
-              {/* Email Field */}
-              <div>
-                <div className="relative group">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <FiMail
-                      className={`h-5 w-5 transition-colors duration-200 ${errors.email
+                  <div className="relative group">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <FiMail
+                        className={`h-5 w-5 transition-colors duration-200 ${errors.email
                           ? "text-red-500 dark:text-red-400"
                           : "text-indigo-500 dark:text-indigo-400 group-focus-within:text-indigo-600 dark:group-focus-within:text-indigo-300"
-                        }`}
-                    />
-                  </div>
-                  <input
-                    {...register("email", {
-                      required: "Username or Email is required",
-                      validate: (value) => {
-                        const emailPattern =
-                          /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i;
-                        const usernamePattern = /^[a-zA-Z0-9._-]{3,}$/;
-                        if (
-                          emailPattern.test(value) ||
-                          usernamePattern.test(value)
-                        ) {
-                          return true;
-                        }
-                        return "Enter a valid email or username (min 3 characters, no spaces)";
-                      },
-                    })}
-                    type="text"
-                    autoComplete="username"
-                    className={`appearance-none block w-full pl-10 pr-3 py-3.5 bg-gray-50 dark:bg-slate-800/80 border rounded-xl placeholder-gray-500 dark:placeholder-slate-400 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:border-transparent dark:focus:bg-slate-800 transition-all duration-300 sm:text-sm ${errors.email
+                          }`}
+                      />
+                    </div>
+                    <input
+                      {...register("email", {
+                        required: "Username or Email is required",
+                        validate: (value) => {
+                          const emailPattern =
+                            /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i;
+                          const usernamePattern = /^[a-zA-Z0-9._-]{3,}$/;
+                          if (
+                            emailPattern.test(value) ||
+                            usernamePattern.test(value)
+                          ) {
+                            return true;
+                          }
+                          return "Enter a valid email or username (min 3 characters, no spaces)";
+                        },
+                      })}
+                      type="text"
+                      autoComplete="username"
+                      className={`appearance-none block w-full pl-10 pr-3 py-3.5 bg-gray-50 dark:bg-slate-800/80 border rounded-xl placeholder-gray-500 dark:placeholder-slate-400 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:border-transparent dark:focus:bg-slate-800 transition-all duration-300 sm:text-sm ${errors.email
                         ? "border-red-300 dark:border-red-600 focus:ring-red-500 dark:focus:ring-red-400"
                         : "border-gray-300 dark:border-slate-600/60 focus:ring-indigo-500 dark:focus:ring-indigo-400"
-                      }`}
-                    placeholder="Username or Email"
-                  />
+                        }`}
+                      placeholder="Username or Email"
+                    />
+                  </div>
+                  {errors.email && (
+                    <p className="mt-2 text-sm text-red-600 dark:text-red-400 flex items-center animate-in slide-in-from-top-1 duration-200">
+                      <FiAlertCircle className="w-4 h-4 mr-1" />
+                      {errors.email.message}
+                    </p>
+                  )}
                 </div>
-                {errors.email && (
-                  <p className="mt-2 text-sm text-red-600 dark:text-red-400 flex items-center animate-in slide-in-from-top-1 duration-200">
-                    <FiAlertCircle className="w-4 h-4 mr-1" />
-                    {errors.email.message}
-                  </p>
-                )}
-              </div>
 
-              {/* Password Field */}
-              <div>
-                <div className="relative group">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <FiLock
-                      className={`h-5 w-5 transition-colors duration-200 ${errors.password
+                {/* Password Field */}
+                <div>
+                  <div className="relative group">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <FiLock
+                        className={`h-5 w-5 transition-colors duration-200 ${errors.password
                           ? "text-red-500 dark:text-red-400"
                           : "text-indigo-500 dark:text-indigo-400 group-focus-within:text-indigo-600 dark:group-focus-within:text-indigo-300"
-                        }`}
-                    />
-                  </div>
-                  <input
-                    {...register("password", {
-                      required: "Password is required",
-                      minLength: {
-                        value: 6,
-                        message: "Password must be at least 6 characters",
-                      },
-                    })}
-                    type={showPassword ? "text" : "password"}
-                    autoComplete="current-password"
-                    className={`appearance-none block w-full pl-10 pr-10 py-3.5 bg-gray-50 dark:bg-slate-800/80 border rounded-xl placeholder-gray-500 dark:placeholder-slate-400 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:border-transparent dark:focus:bg-slate-800 transition-all duration-300 sm:text-sm ${errors.password
+                          }`}
+                      />
+                    </div>
+                    <input
+                      {...register("password", {
+                        required: "Password is required",
+                        minLength: {
+                          value: 6,
+                          message: "Password must be at least 6 characters",
+                        },
+                      })}
+                      type={showPassword ? "text" : "password"}
+                      autoComplete="current-password"
+                      className={`appearance-none block w-full pl-10 pr-10 py-3.5 bg-gray-50 dark:bg-slate-800/80 border rounded-xl placeholder-gray-500 dark:placeholder-slate-400 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:border-transparent dark:focus:bg-slate-800 transition-all duration-300 sm:text-sm ${errors.password
                         ? "border-red-300 dark:border-red-600 focus:ring-red-500 dark:focus:ring-red-400"
                         : "border-gray-300 dark:border-slate-600/60 focus:ring-indigo-500 dark:focus:ring-indigo-400"
-                      }`}
-                    placeholder="Password"
-                  />
-                  <button
-                    type="button"
-                    tabIndex={-1}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 dark:text-slate-400 focus:outline-none"
-                    onClick={() => setShowPassword((prev) => !prev)}
-                    aria-label={
-                      showPassword ? "Hide password" : "Show password"
-                    }
-                  >
-                    {showPassword ? (
-                      <FiEyeOff className="h-5 w-5" />
-                    ) : (
-                      <FiEye className="h-5 w-5" />
-                    )}
-                  </button>
+                        }`}
+                      placeholder="Password"
+                    />
+                    <button
+                      type="button"
+                      tabIndex={-1}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 dark:text-slate-400 focus:outline-none"
+                      onClick={() => setShowPassword((prev) => !prev)}
+                      aria-label={
+                        showPassword ? "Hide password" : "Show password"
+                      }
+                    >
+                      {showPassword ? (
+                        <FiEyeOff className="h-5 w-5" />
+                      ) : (
+                        <FiEye className="h-5 w-5" />
+                      )}
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-            <button
-              type="submit"
-              className="w-full flex justify-center items-center px-4 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition-all duration-200"
-              disabled={isLoading}
-            >
-              {isLoading ? "Signing in..." : "Sign In"}
-            </button>
-          </form>
+              <button
+                type="submit"
+                className="w-full flex justify-center items-center px-4 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition-all duration-200"
+                disabled={isLoading}
+              >
+                {isLoading ? "Signing in..." : "Sign In"}
+              </button>
+            </form>
+          </div>
         </div>
       </div>
     </Authlayout>

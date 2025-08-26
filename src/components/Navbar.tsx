@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import {
   FiMenu,
   FiX,
@@ -99,6 +99,7 @@ const Navbar: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const router = useRouter();
+  const pathname = usePathname();
   const dispatch = useAppDispatch();
   const { status: isLoggedIn, user } = useAppSelector((state) => state.auth);
   const isHOD = user?.isHOD;
@@ -213,6 +214,13 @@ const Navbar: React.FC = () => {
     setShowUserMenu(false);
   };
 
+  // Helper function to check if a link is active
+  const isActiveLink = (linkPath: string) => {
+    if (linkPath === "/" && (pathname === "/" || pathname === "/mentor-dashboard" || pathname === "/mentee-dashboard")) return true;
+    if (linkPath !== "/" && pathname.startsWith(linkPath)) return true;
+    return false;
+  };
+
   if (!mounted) return null;
 
   return (
@@ -259,20 +267,38 @@ const Navbar: React.FC = () => {
           <div className="flex items-center space-x-4">
             {/* Desktop Navigation Links */}
             <div className="hidden lg:flex items-center space-x-1">
-              {filteredNavLinks.map((link) => (
-                <Link
-                  key={link.path}
-                  href={
-                    isLoggedIn || link.roles.includes("Public")
-                      ? link.path
-                      : "/login"
-                  }
-                  className="group relative px-4 py-2.5 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50/80 dark:hover:bg-blue-950/30 transition-all duration-300"
-                >
-                  <span className="relative z-10">{link.name}</span>
-                  <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                </Link>
-              ))}
+              {filteredNavLinks.map((link) => {
+                const isActive = isActiveLink(link.path);
+                return (
+                  <Link
+                    key={link.path}
+                    href={
+                      isLoggedIn || link.roles.includes("Public")
+                        ? link.path
+                        : "/login"
+                    }
+                    className={`group relative px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 ${isActive
+                      ? "text-black dark:text-white bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30"
+                      : "text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400"
+                      }`}
+                    onMouseEnter={(e) => {
+                      if (!isActive) {
+                        e.currentTarget.style.backgroundColor = "rgba(59, 130, 246, 0.1)";
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isActive) {
+                        e.currentTarget.style.backgroundColor = "";
+                      }
+                    }}
+                  >
+                    <span className="relative z-10">{link.name}</span>
+                    {!isActive && (
+                      <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    )}
+                  </Link>
+                );
+              })}
 
               {isLoggedIn ? (
                 <div className="flex items-center space-x-3 ml-4">
@@ -465,19 +491,25 @@ const Navbar: React.FC = () => {
         )}
 
         <div className="px-2 pt-2 pb-3 space-y-1">
-          {filteredNavLinks.map((link) => (
-            <Link
-              key={link.path}
-              href={isLoggedIn ? link.path : "/login"}
-              className="block px-4 py-3 rounded-xl text-base font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-all duration-300 mx-2"
-              onClick={() => setIsOpen(false)}
-            >
-              <div className="flex items-center">
-                {link.icon}
-                {link.name}
-              </div>
-            </Link>
-          ))}
+          {filteredNavLinks.map((link) => {
+            const isActive = isActiveLink(link.path);
+            return (
+              <Link
+                key={link.path}
+                href={isLoggedIn ? link.path : "/login"}
+                className={`block px-4 py-3 rounded-xl text-base font-medium transition-all duration-300 mx-2 ${isActive
+                  ? "text-black dark:text-white bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30"
+                  : "text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30"
+                  }`}
+                onClick={() => setIsOpen(false)}
+              >
+                <div className="flex items-center">
+                  {link.icon}
+                  {link.name}
+                </div>
+              </Link>
+            );
+          })}
 
           {/* Auth Button for Mobile */}
           {isLoggedIn ? (

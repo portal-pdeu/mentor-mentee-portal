@@ -15,14 +15,17 @@ export default function HomePage() {
             router.replace("/mentor-dashboard");
         } else if (user?.labels?.includes("Student")) {
             router.replace("/mentee-dashboard");
+        } else {
+            // If user is not logged in, redirect to login page
+            router.replace("/login");
         }
-        // else: stay on this page or show a generic landing
     }, [user, router]);
 
+    // Show loading state while redirecting
     return (
         <div className="flex flex-col items-center justify-center min-h-screen">
-            <h1 className="text-3xl font-bold mb-4">Welcome to the Mentor-Mentee Portal</h1>
-            <p className="text-lg text-gray-700">Please sign in to continue.</p>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <p className="mt-2 text-gray-600 dark:text-gray-400">Redirecting...</p>
         </div>
     );
 }

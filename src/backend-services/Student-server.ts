@@ -321,6 +321,52 @@ class StudentServerServices {
       throw error;
     }
   }
+
+  async getStudentsByMentorId(mentorId: string) {
+    try {
+      if (!mentorId || mentorId.trim() === "") {
+        console.warn("Get Students By Mentor ID: mentorId is required and cannot be empty");
+        return [];
+      }
+
+      const cookieStore = await cookies();
+      const sessionCookie = cookieStore.get("session");
+      if (!sessionCookie?.value) {
+        return [];
+      }
+      const { databases } = await createSessionClient(sessionCookie.value);
+
+      const response = await databases.listDocuments(
+        String(process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID),
+        String(process.env.NEXT_PUBLIC_APPWRITE_STUDENT_COLLECTION_ID),
+        [Query.equal("mentorId", mentorId)]
+      );
+
+      const students: Student[] = response.documents.map((student: any) => ({
+        studentId: student.studentId,
+        name: student.name,
+        email: student.email,
+        rollNo: student.rollNo,
+        imageUrl: student.imageUrl,
+        imageId: student.imageId,
+        projectRequestStatus: student.projectRequestStatus,
+        IA1: student.IA1 || 0,
+        IA2: student.IA2 || 0,
+        EndSem: student.EndSem || 0,
+        total: 0,
+        school: student.school || "",
+        department: student.department || "",
+        password: student.password || "",
+        phoneNumber: student.phoneNumber || "",
+        fcmToken: student.fcmToken || [],
+      }));
+
+      return students;
+    } catch (error) {
+      console.error("Get Students By Mentor ID Error:", error);
+      return [];
+    }
+  }
 }
 
 const studentServerServices = new StudentServerServices();

@@ -2,9 +2,21 @@
 "use client";
 
 import { useAppSelector } from "@/GlobalRedux/hooks";
+import { useState, useEffect } from "react";
 
 export default function MenteeDashboard() {
     const user = useAppSelector((state) => state.auth.user);
+    const [isClient, setIsClient] = useState(false);
+
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
+
+    // Don't render anything until client-side hydration is complete
+    if (!isClient) {
+        return <div className="min-h-screen bg-background text-foreground" />;
+    }
+
     const isStudent = user?.labels && user.labels.includes("Student");
 
     if (!isStudent) {
