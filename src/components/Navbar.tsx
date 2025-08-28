@@ -127,7 +127,7 @@ const Navbar: React.FC = () => {
     filteredNavLinks = navLinks.filter((link) => link.name === "Home");
   }
 
-  // Handle scroll effect
+  // Handle scroll effect and mounting
   useEffect(() => {
     setMounted(true);
     const handleScroll = () => {
@@ -216,16 +216,41 @@ const Navbar: React.FC = () => {
 
   // Helper function to check if a link is active
   const isActiveLink = (linkPath: string) => {
+    if (!mounted) return false; // Prevent hydration mismatch
     if (linkPath === "/" && (pathname === "/" || pathname === "/mentor-dashboard" || pathname === "/mentee-dashboard")) return true;
     if (linkPath !== "/" && pathname.startsWith(linkPath)) return true;
     return false;
   };
 
-  if (!mounted) return null;
+  // Show loading skeleton during hydration to prevent mismatch
+  if (!mounted) {
+    return (
+      <nav className="fixed top-0 w-full z-50 bg-white/70 dark:bg-gray-950/70 backdrop-blur-md py-4 border-b border-gray-200/30 dark:border-gray-800/30">
+        <div className="mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center">
+            <div className="flex-shrink-0 flex items-center">
+              <div className="flex items-center space-x-3">
+                <div className="relative w-8 h-8 animate-pulse bg-gray-300 dark:bg-gray-700 rounded"></div>
+                <div className="w-32 h-6 animate-pulse bg-gray-300 dark:bg-gray-700 rounded"></div>
+              </div>
+            </div>
+            <div className="flex items-center space-x-4">
+              <div className="hidden lg:flex items-center space-x-1">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="w-20 h-9 animate-pulse bg-gray-200 dark:bg-gray-800 rounded-xl"></div>
+                ))}
+              </div>
+              <div className="w-10 h-10 animate-pulse bg-gray-200 dark:bg-gray-800 rounded-xl"></div>
+            </div>
+          </div>
+        </div>
+      </nav>
+    );
+  }
 
   return (
     <nav
-      className={`fixed top-0 w-full z-50 transition-all duration-500 ${isScrolled
+      className={`fixed top-0 w-full z-50 transition-all duration-200 ${isScrolled
         ? "bg-white/80 dark:bg-gray-950/80 backdrop-blur-xl shadow-xl shadow-black/5 dark:shadow-black/20 py-3 border-b border-gray-200/50 dark:border-gray-800/50"
         : "bg-white/70 dark:bg-gray-950/70 backdrop-blur-md py-4 border-b border-gray-200/30 dark:border-gray-800/30"
         }`}
@@ -277,24 +302,14 @@ const Navbar: React.FC = () => {
                         ? link.path
                         : "/login"
                     }
-                    className={`group relative px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 ${isActive
-                      ? "text-black dark:text-white bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30"
-                      : "text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400"
+                    className={`group relative px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 ${isActive
+                      ? "text-green-800 dark:text-green-200 bg-gradient-to-br from-green-100 to-emerald-100 dark:from-green-900/50 dark:to-emerald-900/50 shadow-sm"
+                      : "text-gray-700 dark:text-gray-300 hover:text-green-800 dark:hover:text-green-200 hover:bg-gradient-to-br hover:from-green-50 hover:to-emerald-50 dark:hover:from-green-950/40 dark:hover:to-emerald-950/40"
                       }`}
-                    onMouseEnter={(e) => {
-                      if (!isActive) {
-                        e.currentTarget.style.backgroundColor = "rgba(59, 130, 246, 0.1)";
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!isActive) {
-                        e.currentTarget.style.backgroundColor = "";
-                      }
-                    }}
                   >
                     <span className="relative z-10">{link.name}</span>
                     {!isActive && (
-                      <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                      <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-green-500/10 to-emerald-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                     )}
                   </Link>
                 );
@@ -396,7 +411,7 @@ const Navbar: React.FC = () => {
             {/* Theme Toggle Button */}
             <button
               onClick={toggleTheme}
-              className="p-2.5 rounded-xl text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 shadow-sm hover:shadow-md ring-1 ring-gray-200/50 dark:ring-gray-700/50 bg-white/50 dark:bg-gray-800/50 hidden lg:block"
+              className="p-2.5 rounded-xl text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 shadow-sm hover:shadow-md ring-1 ring-gray-200/50 dark:ring-gray-700/50 bg-white/50 dark:bg-gray-800/50 hidden lg:block transition-all duration-150"
               aria-label="Toggle theme"
             >
               {theme === "dark" ? (
@@ -429,7 +444,7 @@ const Navbar: React.FC = () => {
             {/* Theme Toggle for Mobile */}
             <button
               onClick={toggleTheme}
-              className="p-2 rounded-xl text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-all duration-300"
+              className="p-2 rounded-xl text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-all duration-150"
               aria-label="Toggle theme"
             >
               {theme === "dark" ? (
@@ -441,7 +456,7 @@ const Navbar: React.FC = () => {
 
             <button
               onClick={toggleMenu}
-              className="inline-flex items-center justify-center p-2 rounded-xl text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-all duration-300"
+              className="inline-flex items-center justify-center p-2 rounded-xl text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-all duration-150"
               aria-expanded="false"
             >
               <span className="sr-only">Open main menu</span>
@@ -497,9 +512,9 @@ const Navbar: React.FC = () => {
               <Link
                 key={link.path}
                 href={isLoggedIn ? link.path : "/login"}
-                className={`block px-4 py-3 rounded-xl text-base font-medium transition-all duration-300 mx-2 ${isActive
-                  ? "text-black dark:text-white bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30"
-                  : "text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30"
+                className={`block px-4 py-3 rounded-xl text-base font-medium transition-all duration-150 mx-2 ${isActive
+                  ? "text-green-800 dark:text-green-200 bg-gradient-to-br from-green-100 to-emerald-100 dark:from-green-900/50 dark:to-emerald-900/50 shadow-sm"
+                  : "text-gray-700 dark:text-gray-300 hover:text-green-800 dark:hover:text-green-200 hover:bg-gradient-to-br hover:from-green-50 hover:to-emerald-50 dark:hover:from-green-950/40 dark:hover:to-emerald-950/40"
                   }`}
                 onClick={() => setIsOpen(false)}
               >

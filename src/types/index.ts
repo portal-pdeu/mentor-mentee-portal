@@ -127,6 +127,46 @@ export interface GlobalData {
   ProjectSettingsChanged: string;
 }
 
+// Meeting interfaces
+export interface Meeting {
+  id: string;
+  title: string;
+  description: string;
+  date: string;
+  time: string;
+  duration: number; // in minutes
+  meetingUrl: string;
+  meetingPassword?: string;
+  purpose: string;
+  status: 'scheduled' | 'ongoing' | 'completed' | 'cancelled';
+  mentorId: string;
+  mentorName: string;
+  invitedStudents: InvitedStudent[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface InvitedStudent {
+  studentId: string;
+  studentName: string;
+  studentEmail: string;
+  rollNo: string;
+  responseStatus: 'pending' | 'accepted' | 'declined';
+  joinedAt?: string;
+}
+
+export interface CreateMeetingData {
+  title: string;
+  description: string;
+  date: string;
+  time: string;
+  duration: number;
+  meetingUrl: string;
+  meetingPassword?: string;
+  purpose: string;
+  invitedStudentIds: string[];
+}
+
 export type tokenInfo = {
   name: string;
   token: string;
