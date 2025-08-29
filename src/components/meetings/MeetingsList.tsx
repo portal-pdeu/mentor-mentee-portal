@@ -84,11 +84,17 @@ const MeetingsList: React.FC<MeetingsListProps> = ({
             <div
                 key={meeting.id}
                 className={`relative group cursor-pointer transition-all duration-200 ${isSelected
-                        ? 'bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800 shadow-md'
-                        : 'bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800/50 border-gray-200/50 dark:border-gray-800/50'
+                    ? 'bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800 shadow-md'
+                    : 'bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800/50 border-gray-200/50 dark:border-gray-800/50'
                     } border rounded-xl p-4 ${isDeleting ? 'opacity-50 pointer-events-none' : ''}`}
                 onClick={() => !isDeleting && onMeetingSelect(meeting)}
             >
+                {/* Status Badge - Top Right */}
+                <span className={`absolute top-2 right-2 z-10 inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold shadow ${meetingsService.getStatusBadgeColor(meeting.status)} bg-white dark:bg-gray-900`}
+                >
+                    {meeting.status}
+                </span>
+
                 {/* Meeting Header */}
                 <div className="flex items-start justify-between mb-3">
                     <div className="flex-1 min-w-0">
@@ -99,12 +105,6 @@ const MeetingsList: React.FC<MeetingsListProps> = ({
                             {meeting.description}
                         </p>
                     </div>
-
-                    {/* Status Badge */}
-                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ml-2 ${meetingsService.getStatusBadgeColor(meeting.status)
-                        }`}>
-                        {meeting.status}
-                    </span>
                 </div>
 
                 {/* Meeting Info */}
@@ -131,7 +131,7 @@ const MeetingsList: React.FC<MeetingsListProps> = ({
                 </div>
 
                 {/* Actions Menu */}
-                <div className="absolute top-2 right-2">
+                <div className="absolute top-2 right-2 mt-8">
                     <button
                         onClick={(e) => {
                             e.stopPropagation();

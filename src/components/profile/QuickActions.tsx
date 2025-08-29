@@ -9,7 +9,7 @@ import { toast } from '@/hooks/use-toast';
 import { FiUsers, FiBarChart2, FiLogOut } from 'react-icons/fi';
 
 interface QuickActionsProps {
-    // No additional props needed for now
+    [key: string]: unknown; // Allow any additional props
 }
 
 interface QuickActionsError extends Error {

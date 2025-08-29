@@ -3,12 +3,12 @@
 
 import { useAppSelector } from "@/GlobalRedux/hooks";
 import { FiMenu, FiX, FiGrid, FiList, FiUser, FiUsers, FiBarChart2, FiCalendar, FiMail, FiLogOut, FiMapPin } from "react-icons/fi";
-import { Avatar } from "@/components/ui/avatar";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Student, Faculty } from "@/types";
 import { getMenteesByMentorId, getAllStudents, getFacultyByDocId } from "./actions";
 import { useAppDispatch } from "@/GlobalRedux/hooks";
 import { logout } from "@/GlobalRedux/authSlice";
+import AnalyticsDashboard from "@/components/analytics/AnalyticsDashboard";
 import { logoutAction } from "@/app/login/actions";
 import { useRouter } from "next/navigation";
 import { toast } from "@/hooks/use-toast";
@@ -42,17 +42,23 @@ export default function MentorDashboard() {
     const [loading, setLoading] = useState(true);
     const [currentStats, setCurrentStats] = useState(stats);
 
-    useEffect(() => {
-        setIsClient(true);
-    }, []);
+    const calculateStats = (students: Student[]) => {
+        const totalMentees = students.length;
+        const cgpaValues = students.map(s => (s.IA1 + s.IA2 + s.EndSem) / 3).filter(cgpa => cgpa > 0);
+        const averageCGPA = cgpaValues.length > 0 ?
+            Number((cgpaValues.reduce((a, b) => a + b, 0) / cgpaValues.length).toFixed(2)) : 0;
+        const excellentPerformers = cgpaValues.filter(cgpa => cgpa >= 9.0).length;
+        const needsAttention = cgpaValues.filter(cgpa => cgpa < 7.0).length;
 
-    useEffect(() => {
-        if (isClient && user?.userId) {
-            loadData();
-        }
-    }, [isClient, user]);
+        setCurrentStats([
+            { label: "Total Mentees", value: totalMentees },
+            { label: "Average CGPA", value: averageCGPA },
+            { label: "Excellent Performers", value: excellentPerformers, sub: "CGPA ≥ 9.0" },
+            { label: "Needs Attention", value: needsAttention, sub: "CGPA < 7.0" },
+        ]);
+    };
 
-    const loadData = async () => {
+    const loadData = useCallback(async () => {
         setLoading(true);
         try {
             if (user?.userId) {
@@ -76,31 +82,55 @@ export default function MentorDashboard() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [user?.userId]);
 
-    const calculateStats = (students: Student[]) => {
-        const totalMentees = students.length;
-        const cgpaValues = students.map(s => (s.IA1 + s.IA2 + s.EndSem) / 3).filter(cgpa => cgpa > 0);
-        const averageCGPA = cgpaValues.length > 0 ?
-            Number((cgpaValues.reduce((a, b) => a + b, 0) / cgpaValues.length).toFixed(2)) : 0;
-        const excellentPerformers = cgpaValues.filter(cgpa => cgpa >= 9.0).length;
-        const needsAttention = cgpaValues.filter(cgpa => cgpa < 7.0).length;
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
 
-        setCurrentStats([
-            { label: "Total Mentees", value: totalMentees },
-            { label: "Average CGPA", value: averageCGPA },
-            { label: "Excellent Performers", value: excellentPerformers, sub: "CGPA ≥ 9.0" },
-            { label: "Needs Attention", value: needsAttention, sub: "CGPA < 7.0" },
-        ]);
-    };
+    useEffect(() => {
+        if (isClient && user?.userId) {
+            loadData();
+        }
+    }, [isClient, user, loadData]);
+
+    // Listen for analytics activation from external navigation
+    useEffect(() => {
+        const handleAnalyticsActive = () => {
+            setActiveSection("analytics");
+        };
+
+        window.addEventListener('setAnalyticsActive', handleAnalyticsActive);
+        return () => window.removeEventListener('setAnalyticsActive', handleAnalyticsActive);
+    }, []);
+
+    // Notify navbar when section changes
+    useEffect(() => {
+        if (activeSection === "analytics") {
+            window.dispatchEvent(new CustomEvent('setAnalyticsActive'));
+        } else {
+            window.dispatchEvent(new CustomEvent('setAnalyticsInactive'));
+        }
+    }, [activeSection]);
 
     const handleNavClick = (sectionId: string) => {
         if (sectionId === "directory") {
             // Navigate to the actual student directory page
             window.location.href = "/student-directory";
+        } else if (sectionId === "meetings") {
+            // Navigate to the meetings page
+            window.location.href = "/meetings";
         } else {
+            // Handle internal sections (mentees, analytics, profile)
             setActiveSection(sectionId);
             setMenuOpen(false);
+
+            // Notify navbar about section changes
+            if (sectionId === "analytics") {
+                window.dispatchEvent(new CustomEvent('setAnalyticsActive'));
+            } else {
+                window.dispatchEvent(new CustomEvent('setAnalyticsInactive'));
+            }
         }
     };
 
@@ -284,8 +314,8 @@ export default function MentorDashboard() {
                     </section>
                 )}
 
-                {/* Loading State */}
-                {loading && (
+                {/* Loading State - Only show for non-analytics sections */}
+                {loading && activeSection !== "analytics" && (
                     <div className="flex items-center justify-center py-12">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                         <span className="ml-2 text-gray-600 dark:text-gray-400">Loading...</span>
@@ -443,10 +473,16 @@ export default function MentorDashboard() {
                 )}
 
                 {activeSection === "analytics" && (
-                    <div className="text-center py-12">
-                        <h2 className="text-2xl font-bold mb-4">Analytics</h2>
-                        <p className="text-gray-500 dark:text-gray-400">Analytics dashboard coming soon...</p>
-                    </div>
+                    loading ? (
+                        <div className="space-y-8">
+                            <div className="flex items-center justify-center py-12">
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                                <span className="ml-2 text-gray-600 dark:text-gray-400">Loading analytics...</span>
+                            </div>
+                        </div>
+                    ) : (
+                        <AnalyticsDashboard mentees={mentees} />
+                    )
                 )}
 
                 {/* Profile Section */}

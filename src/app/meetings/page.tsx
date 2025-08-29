@@ -65,6 +65,7 @@ const MeetingsPage: React.FC = () => {
         try {
             setMeetings(prevMeetings => [newMeeting, ...prevMeetings]);
             setShowCreateMeeting(false);
+            setSelectedMeeting(newMeeting); // Select the new meeting for details
             setRefreshTrigger(prev => prev + 1);
             console.log('[MeetingsPage] Meeting created successfully:', newMeeting.id);
         } catch (error) {

@@ -98,6 +98,7 @@ const Navbar: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [analyticsActive, setAnalyticsActive] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
   const dispatch = useAppDispatch();
@@ -143,6 +144,30 @@ const Navbar: React.FC = () => {
       window.removeEventListener("scroll", handleScroll);
     };
   }, []);
+
+  // Listen for analytics activation from mentor dashboard
+  useEffect(() => {
+    const handleAnalyticsActive = () => {
+      setAnalyticsActive(true);
+    };
+
+    const handleAnalyticsInactive = () => {
+      setAnalyticsActive(false);
+    };
+
+    // Reset analytics active state when navigating away from mentor dashboard
+    if (pathname !== "/mentor-dashboard") {
+      setAnalyticsActive(false);
+    }
+
+    window.addEventListener('setAnalyticsActive', handleAnalyticsActive);
+    window.addEventListener('setAnalyticsInactive', handleAnalyticsInactive);
+
+    return () => {
+      window.removeEventListener('setAnalyticsActive', handleAnalyticsActive);
+      window.removeEventListener('setAnalyticsInactive', handleAnalyticsInactive);
+    };
+  }, [pathname]);
 
   // Close user menu when clicking outside
   useEffect(() => {
@@ -217,7 +242,17 @@ const Navbar: React.FC = () => {
   // Helper function to check if a link is active
   const isActiveLink = (linkPath: string) => {
     if (!mounted) return false; // Prevent hydration mismatch
-    if (linkPath === "/" && (pathname === "/" || pathname === "/mentor-dashboard" || pathname === "/mentee-dashboard")) return true;
+
+    // Special handling for analytics
+    if (linkPath === "/analytics" && analyticsActive && pathname === "/mentor-dashboard") {
+      return true;
+    }
+
+    // Special handling for home - only active if not in analytics mode
+    if (linkPath === "/" && (pathname === "/" || pathname === "/mentor-dashboard" || pathname === "/mentee-dashboard")) {
+      return !analyticsActive; // Home is not active when analytics is active
+    }
+
     if (linkPath !== "/" && pathname.startsWith(linkPath)) return true;
     return false;
   };

@@ -20,7 +20,7 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "PDEU Submission Portal",
+  title: "PDEU Mentor Mentee Portal",
   description: "Management System for Minor Projects",
 };
 
