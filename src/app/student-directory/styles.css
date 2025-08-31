@@ -1,0 +1,16 @@
+/* Override default Avatar rounded-full styling */
+[data-radix-avatar-root],
+.student-avatar,
+.h-12.w-12>[data-radix-avatar-image],
+.h-12.w-12>[data-radix-avatar-fallback] {
+    border-radius: 0.5rem !important;
+    /* rounded-lg */
+    overflow: hidden !important;
+}
+
+/* Ensure images load properly */
+[data-radix-avatar-image] {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+}

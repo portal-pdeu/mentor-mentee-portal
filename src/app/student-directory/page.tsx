@@ -2,10 +2,12 @@
 
 import { useAppSelector } from "@/GlobalRedux/hooks";
 import { FiMenu, FiX, FiGrid, FiList, FiUser, FiSearch, FiMail } from "react-icons/fi";
-import { Avatar } from "@/components/ui/avatar";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useState, useEffect } from "react";
 import { Student } from "@/types";
 import { getAllStudents } from "../mentor-dashboard/actions";
+import { getStudentImageUrl, getInitials, hasValidImage } from "@/lib/imageUtils";
+import "./styles.css";
 
 export default function StudentDirectory() {
     const user = useAppSelector((state) => state.auth.user);
@@ -36,6 +38,13 @@ export default function StudentDirectory() {
         setLoading(true);
         try {
             const studentsData = await getAllStudents();
+            console.log('Sample student data:', studentsData.slice(0, 3).map(s => ({
+                name: s.name,
+                imageId: s.imageId,
+                imageUrl: s.imageUrl,
+                hasImageId: !!s.imageId,
+                hasImageUrl: !!s.imageUrl
+            })));
             setAllStudents(studentsData);
         } catch (error) {
             console.error("Error loading students:", error);
@@ -259,14 +268,38 @@ export default function StudentDirectory() {
 
                                             return (
                                                 <div key={student.email} className="group relative overflow-hidden rounded-lg bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border border-blue-200/60 dark:border-blue-700/60 shadow-sm hover:shadow-md transition-all duration-300">
+
                                                     <div className="p-6 flex flex-col gap-4">
                                                         {/* Header with avatar and basic info */}
                                                         <div className="flex items-center gap-4">
-                                                            <div className={`relative h-12 w-12 rounded-lg bg-gradient-to-br ${colorTheme.bg} flex items-center justify-center shadow-sm`}>
-                                                                <span className="text-white font-semibold text-sm">
-                                                                    {student.name.split(' ').map(n => n[0]).join('')}
-                                                                </span>
-                                                            </div>
+                                                            <Avatar className="h-12 w-12 rounded-lg overflow-hidden">
+                                                                {student.imageId && student.imageId.trim() !== '' && student.imageId !== 'undefined' ? (
+                                                                    <AvatarImage
+                                                                        src={getStudentImageUrl(student.imageId)}
+                                                                        alt={`${student.name}'s profile picture`}
+                                                                        className="object-cover w-full h-full"
+                                                                        onLoad={() => console.log('Grid: Image loaded successfully for:', student.name)}
+                                                                        onError={(e) => {
+                                                                            console.log('Grid: Image failed to load for:', student.name);
+                                                                            e.currentTarget.style.display = 'none';
+                                                                        }}
+                                                                    />
+                                                                ) : student.imageUrl && student.imageUrl.trim() !== '' && student.imageUrl !== 'undefined' ? (
+                                                                    <AvatarImage
+                                                                        src={student.imageUrl}
+                                                                        alt={`${student.name}'s profile picture`}
+                                                                        className="object-cover w-full h-full"
+                                                                        onLoad={() => console.log('Grid: Direct imageUrl loaded for:', student.name)}
+                                                                        onError={(e) => {
+                                                                            console.log('Grid: Direct imageUrl failed for:', student.name);
+                                                                            e.currentTarget.style.display = 'none';
+                                                                        }}
+                                                                    />
+                                                                ) : null}
+                                                                <AvatarFallback className={`bg-gradient-to-br ${colorTheme.bg} text-white font-semibold text-sm rounded-lg flex items-center justify-center`}>
+                                                                    {getInitials(student.name)}
+                                                                </AvatarFallback>
+                                                            </Avatar>
                                                             <div className="flex-1 min-w-0">
                                                                 <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate">{student.name}</h3>
                                                                 <p className="text-sm text-gray-500 dark:text-gray-400">{student.rollNo}</p>
@@ -281,7 +314,7 @@ export default function StudentDirectory() {
                                                             )}
                                                         </div>
 
-                                                        {/* Contact and department info */}
+                                                        {/* Contact and mentor info */}
                                                         <div className="space-y-2">
                                                             <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300">
                                                                 <div className={`p-1.5 rounded-md ${colorTheme.accent}`}>
@@ -289,25 +322,26 @@ export default function StudentDirectory() {
                                                                 </div>
                                                                 <span className="truncate">{student.email}</span>
                                                             </div>
-                                                            <div className="flex items-center gap-3 text-sm">
+                                                            <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300">
                                                                 <div className={`p-1.5 rounded-md ${colorTheme.accent}`}>
                                                                     <FiUser className="w-3.5 h-3.5 text-gray-500" />
                                                                 </div>
-                                                                <span className="text-gray-700 dark:text-gray-300 truncate">{student.department} • {student.school}</span>
+                                                                <span className="truncate">
+                                                                    Mentor: {student.mentorId ? "Faculty Name" : "Not Assigned"}
+                                                                </span>
                                                             </div>
                                                         </div>
 
-                                                        {/* Status and action button */}
-                                                        <div className="pt-3 border-t border-gray-100 dark:border-gray-800 space-y-3">
-                                                            <div className="flex items-center justify-between">
-                                                                <span className="text-xs text-gray-500 dark:text-gray-400">Status:</span>
-                                                                <span className={`px-2 py-1 rounded-md text-xs font-medium ${student.projectRequestStatus === 'Accepted' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
-                                                                    student.projectRequestStatus === 'Pending' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
-                                                                        'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
-                                                                    }`}>
-                                                                    {student.projectRequestStatus || "N/A"}
-                                                                </span>
-                                                            </div>
+                                                        {/* Status line */}
+                                                        <div className="flex items-center justify-between">
+                                                            <span className="text-sm text-gray-500 dark:text-gray-400">Status:</span>
+                                                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 border border-green-200 dark:border-green-700">
+                                                                Active
+                                                            </span>
+                                                        </div>
+
+                                                        {/* Action button */}
+                                                        <div className="pt-3 border-t border-gray-100 dark:border-gray-800">
                                                             <button className="w-full py-2.5 px-4 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium text-sm hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 shadow-sm">
                                                                 View Profile
                                                             </button>
@@ -335,27 +369,80 @@ export default function StudentDirectory() {
 
                                             return (
                                                 <div key={student.email} className="group relative overflow-hidden rounded-lg bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border border-blue-200/60 dark:border-blue-700/60 shadow-sm hover:shadow-md transition-all duration-300">
-                                                    <div className="p-4 flex items-center gap-4">
-                                                        <div className={`relative h-11 w-11 rounded-lg bg-gradient-to-br ${colorTheme.bg} flex items-center justify-center shadow-sm`}>
-                                                            <span className="text-white font-semibold text-sm">
-                                                                {student.name.split(' ').map(n => n[0]).join('')}
-                                                            </span>
-                                                        </div>
-                                                        <div className="flex-1 min-w-0">
-                                                            <div className="font-semibold text-gray-900 dark:text-gray-100 truncate">{student.name}</div>
-                                                            <div className="text-sm text-gray-500 dark:text-gray-400">{student.rollNo} • {student.department}</div>
-                                                            <div className="text-xs text-gray-600 dark:text-gray-300 truncate mt-1">{student.email}</div>
-                                                        </div>
-                                                        <div className="flex items-center gap-3">
+                                                    <div className="p-6 flex flex-col gap-4">
+                                                        {/* Header with avatar and basic info */}
+                                                        <div className="flex items-center gap-4">
+                                                            <Avatar className="h-12 w-12 rounded-lg overflow-hidden">
+                                                                {student.imageId && student.imageId.trim() !== '' && student.imageId !== 'undefined' ? (
+                                                                    <AvatarImage
+                                                                        src={getStudentImageUrl(student.imageId)}
+                                                                        alt={`${student.name}'s profile picture`}
+                                                                        className="object-cover w-full h-full"
+                                                                        onLoad={() => console.log('List: Image loaded successfully for:', student.name)}
+                                                                        onError={(e) => {
+                                                                            console.log('List: Image failed to load for:', student.name);
+                                                                            e.currentTarget.style.display = 'none';
+                                                                        }}
+                                                                    />
+                                                                ) : student.imageUrl && student.imageUrl.trim() !== '' && student.imageUrl !== 'undefined' ? (
+                                                                    <AvatarImage
+                                                                        src={student.imageUrl}
+                                                                        alt={`${student.name}'s profile picture`}
+                                                                        className="object-cover w-full h-full"
+                                                                        onLoad={() => console.log('List: Direct imageUrl loaded for:', student.name)}
+                                                                        onError={(e) => {
+                                                                            console.log('List: Direct imageUrl failed for:', student.name);
+                                                                            e.currentTarget.style.display = 'none';
+                                                                        }}
+                                                                    />
+                                                                ) : null}
+                                                                <AvatarFallback className={`bg-gradient-to-br ${colorTheme.bg} text-white font-semibold text-sm rounded-lg flex items-center justify-center`}>
+                                                                    {getInitials(student.name)}
+                                                                </AvatarFallback>
+                                                            </Avatar>
+                                                            <div className="flex-1 min-w-0">
+                                                                <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate">{student.name}</h3>
+                                                                <p className="text-sm text-gray-500 dark:text-gray-400">{student.rollNo}</p>
+                                                            </div>
                                                             {cgpa > 0 && (
-                                                                <div className="text-center">
-                                                                    <div className="px-3 py-1 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-medium text-sm">
+                                                                <div className="flex flex-col items-center">
+                                                                    <div className="px-2.5 py-1 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-medium text-sm">
                                                                         {cgpa}
                                                                     </div>
-                                                                    <div className="text-xs text-gray-400 mt-1">CGPA</div>
+                                                                    <span className="text-xs text-gray-400 mt-1">CGPA</span>
                                                                 </div>
                                                             )}
-                                                            <button className="px-4 py-2 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium text-sm hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-sm">
+                                                        </div>
+
+                                                        {/* Contact and mentor info */}
+                                                        <div className="space-y-2">
+                                                            <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300">
+                                                                <div className={`p-1.5 rounded-md ${colorTheme.accent}`}>
+                                                                    <FiMail className="w-3.5 h-3.5 text-gray-500" />
+                                                                </div>
+                                                                <span className="truncate">{student.email}</span>
+                                                            </div>
+                                                            <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300">
+                                                                <div className={`p-1.5 rounded-md ${colorTheme.accent}`}>
+                                                                    <FiUser className="w-3.5 h-3.5 text-gray-500" />
+                                                                </div>
+                                                                <span className="truncate">
+                                                                    Mentor: {student.mentorId ? "Faculty Name" : "Not Assigned"}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Status line */}
+                                                        <div className="flex items-center justify-between">
+                                                            <span className="text-sm text-gray-500 dark:text-gray-400">Status:</span>
+                                                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 border border-green-200 dark:border-green-700">
+                                                                Active
+                                                            </span>
+                                                        </div>
+
+                                                        {/* Action button */}
+                                                        <div className="pt-3 border-t border-gray-100 dark:border-gray-800">
+                                                            <button className="w-full py-2.5 px-4 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium text-sm hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 shadow-sm">
                                                                 View Profile
                                                             </button>
                                                         </div>

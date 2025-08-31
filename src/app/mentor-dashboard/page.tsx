@@ -67,7 +67,87 @@ export default function MentorDashboard() {
                 setFacultyData(faculty);
 
                 // Load mentees for this faculty
-                const menteesData = await getMenteesByMentorId(user.userId);
+                let menteesData = await getMenteesByMentorId(user.userId);
+
+                // HARDCODED TEST DATA - For test faculty2 only (can be deleted later)
+                if (user.name?.toLowerCase().includes('test faculty 2') ||
+                    user.email?.toLowerCase().includes('test faculty 2')) {
+                    const testMentees: Student[] = [
+                        {
+                            studentId: 'test-001',
+                            name: 'TS 1',
+                            email: 'test.student@sot.pdpu.ac.in',
+                            rollNo: '02BCP001',
+                            imageUrl: 'https://via.placeholder.com/150/4F46E5/FFFFFF?text=T1',
+                            imageId: 'test-img-1',
+                            mentorId: user.userId,
+                            projectRequestStatus: 'Accepted',
+                            IA1: 8.5,
+                            IA2: 9.0,
+                            EndSem: 8.8,
+                            school: 'SOT',
+                            department: 'CSE',
+                            password: 'test123',
+                            phoneNumber: '+91 9876543210'
+                        },
+                        {
+                            studentId: 'test-002',
+                            name: 'TS 2',
+                            email: 'test.student2@sot.pdpu.ac.in',
+                            rollNo: '02BCP002',
+                            imageUrl: 'https://via.placeholder.com/150/4F46E5/FFFFFF?text=T2',
+                            imageId: 'test-img-2',
+                            mentorId: user.userId,
+                            projectRequestStatus: 'Accepted',
+                            IA1: 7.5,
+                            IA2: 8.2,
+                            EndSem: 9.1,
+                            school: 'SOT',
+                            department: 'CSE',
+                            password: 'test123',
+                            phoneNumber: '+91 9876543211'
+                        },
+                        {
+                            studentId: 'test-003',
+                            name: 'TS 3',
+                            email: 'test.student3@sot.pdpu.ac.in',
+                            rollNo: '02BCP003',
+                            imageUrl: 'https://via.placeholder.com/150/4F46E5/FFFFFF?text=T3',
+                            imageId: 'test-img-3',
+                            mentorId: user.userId,
+                            projectRequestStatus: 'Accepted',
+                            IA1: 9.2,
+                            IA2: 8.8,
+                            EndSem: 9.5,
+                            school: 'SOT',
+                            department: 'CSE',
+                            password: 'test123',
+                            phoneNumber: '+91 9876543212'
+                        },
+                        {
+                            studentId: 'test-004',
+                            name: 'Yash Bhaiiiii',
+                            email: 'test.student4@sot.pdpu.ac.in',
+                            rollNo: '02BCP004',
+                            imageUrl: 'https://via.placeholder.com/150/4F46E5/FFFFFF?text=YB',
+                            imageId: 'test-img-4',
+                            mentorId: user.userId,
+                            projectRequestStatus: 'NoRequest',
+                            IA1: 6.8,
+                            IA2: 7.3,
+                            EndSem: 8.0,
+                            school: 'SOT',
+                            department: 'CSE',
+                            password: 'test123',
+                            phoneNumber: '+91 9876543213'
+                        }
+                    ];
+
+                    // Add test mentees to the actual data (or replace if no real data)
+                    menteesData = [...menteesData, ...testMentees];
+                    console.log('🧪 Added hardcoded test mentees for test faculty2:', testMentees.length);
+                }
+
                 setMentees(menteesData);
 
                 // Load all students for directory
@@ -384,23 +464,23 @@ export default function MentorDashboard() {
                                                                 </div>
                                                                 <span className="truncate">{student.email}</span>
                                                             </div>
-                                                            {student.phoneNumber && (
-                                                                <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300">
-                                                                    <div className={`p-1.5 rounded-md ${colorTheme.accent}`}>
-                                                                        <FiUser className="w-3.5 h-3.5 text-gray-500" />
-                                                                    </div>
-                                                                    <span>{student.phoneNumber}</span>
-                                                                </div>
-                                                            )}
-                                                            <div className="flex items-center gap-3 text-sm">
+                                                            <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300">
                                                                 <div className={`p-1.5 rounded-md ${colorTheme.accent}`}>
                                                                     <FiUser className="w-3.5 h-3.5 text-gray-500" />
                                                                 </div>
-                                                                <span className="text-gray-700 dark:text-gray-300">{student.department}</span>
+                                                                <span className="truncate">
+                                                                    Mentor: {facultyData?.name || user?.name || "Faculty Name"}
+                                                                </span>
                                                             </div>
                                                         </div>
 
-                                                        {/* Action button */}
+                                                        {/* Status line for both sections */}
+                                                        <div className="flex items-center justify-between">
+                                                            <span className="text-sm text-gray-500 dark:text-gray-400">Status:</span>
+                                                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 border border-green-200 dark:border-green-700">
+                                                                Active
+                                                            </span>
+                                                        </div>                                                        {/* Action button */}
                                                         <div className="pt-3 border-t border-gray-100 dark:border-gray-800">
                                                             <button className="w-full py-2.5 px-4 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium text-sm hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 shadow-sm">
                                                                 View Profile
@@ -429,27 +509,57 @@ export default function MentorDashboard() {
 
                                             return (
                                                 <div key={student.email} className="group relative overflow-hidden rounded-lg bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border border-blue-200/60 dark:border-blue-700/60 shadow-sm hover:shadow-md transition-all duration-300">
-                                                    <div className="p-4 flex items-center gap-4">
-                                                        <div className={`relative h-11 w-11 rounded-lg bg-gradient-to-br ${colorTheme.bg} flex items-center justify-center shadow-sm`}>
-                                                            <span className="text-white font-semibold text-sm">
-                                                                {student.name.split(' ').map(n => n[0]).join('')}
-                                                            </span>
-                                                        </div>
-                                                        <div className="flex-1 min-w-0">
-                                                            <div className="font-semibold text-gray-900 dark:text-gray-100 truncate">{student.name}</div>
-                                                            <div className="text-sm text-gray-500 dark:text-gray-400">{student.rollNo}</div>
-                                                            <div className="text-xs text-gray-600 dark:text-gray-300 truncate mt-1">{student.email}</div>
-                                                        </div>
-                                                        <div className="flex items-center gap-3">
+                                                    <div className="p-6 flex flex-col gap-4">
+                                                        {/* Header with avatar and basic info */}
+                                                        <div className="flex items-center gap-4">
+                                                            <div className={`relative h-12 w-12 rounded-lg bg-gradient-to-br ${colorTheme.bg} flex items-center justify-center shadow-sm`}>
+                                                                <span className="text-white font-semibold text-sm">
+                                                                    {student.name.split(' ').map(n => n[0]).join('')}
+                                                                </span>
+                                                            </div>
+                                                            <div className="flex-1 min-w-0">
+                                                                <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate">{student.name}</h3>
+                                                                <p className="text-sm text-gray-500 dark:text-gray-400">{student.rollNo}</p>
+                                                            </div>
                                                             {cgpa > 0 && (
-                                                                <div className="text-center">
-                                                                    <div className="px-3 py-1 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-medium text-sm">
+                                                                <div className="flex flex-col items-center">
+                                                                    <div className="px-2.5 py-1 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-medium text-sm">
                                                                         {cgpa}
                                                                     </div>
-                                                                    <div className="text-xs text-gray-400 mt-1">CGPA</div>
+                                                                    <span className="text-xs text-gray-400 mt-1">CGPA</span>
                                                                 </div>
                                                             )}
-                                                            <button className="px-4 py-2 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium text-sm hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-sm">
+                                                        </div>
+
+                                                        {/* Contact and department info */}
+                                                        <div className="space-y-2">
+                                                            <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300">
+                                                                <div className={`p-1.5 rounded-md ${colorTheme.accent}`}>
+                                                                    <FiMail className="w-3.5 h-3.5 text-gray-500" />
+                                                                </div>
+                                                                <span className="truncate">{student.email}</span>
+                                                            </div>
+                                                            <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300">
+                                                                <div className={`p-1.5 rounded-md ${colorTheme.accent}`}>
+                                                                    <FiUser className="w-3.5 h-3.5 text-gray-500" />
+                                                                </div>
+                                                                <span className="truncate">
+                                                                    Mentor: {facultyData?.name || user?.name || "Faculty Name"}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Status line for both sections */}
+                                                        <div className="flex items-center justify-between">
+                                                            <span className="text-sm text-gray-500 dark:text-gray-400">Status:</span>
+                                                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 border border-green-200 dark:border-green-700">
+                                                                Active
+                                                            </span>
+                                                        </div>
+
+                                                        {/* Action button */}
+                                                        <div className="pt-3 border-t border-gray-100 dark:border-gray-800">
+                                                            <button className="w-full py-2.5 px-4 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium text-sm hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 shadow-sm">
                                                                 View Profile
                                                             </button>
                                                         </div>
