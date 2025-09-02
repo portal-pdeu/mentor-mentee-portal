@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { CreateMeetingData, Student } from '@/types';
 import meetingsService from '@/services/meetingsService';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { getStudentImageUrl, getInitials, hasValidImage } from '@/lib/imageUtils';
 import {
     FiCalendar,
     FiClock,

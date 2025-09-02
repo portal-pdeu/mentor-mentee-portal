@@ -84,7 +84,7 @@ const MeetingsList: React.FC<MeetingsListProps> = ({
             <div
                 key={meeting.id}
                 className={`relative group cursor-pointer transition-all duration-200 ${isSelected
-                    ? 'bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800 shadow-md'
+                    ? 'bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800 shadow-md'
                     : 'bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800/50 border-gray-200/50 dark:border-gray-800/50'
                     } border rounded-xl p-4 ${isDeleting ? 'opacity-50 pointer-events-none' : ''}`}
                 onClick={() => !isDeleting && onMeetingSelect(meeting)}

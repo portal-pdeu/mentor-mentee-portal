@@ -272,12 +272,12 @@ export default function StudentDirectory() {
                                                     <div className="p-6 flex flex-col gap-4">
                                                         {/* Header with avatar and basic info */}
                                                         <div className="flex items-center gap-4">
-                                                            <Avatar className="h-12 w-12 rounded-lg overflow-hidden">
+                                                            <Avatar className="h-12 w-12 rounded-full overflow-hidden">
                                                                 {student.imageId && student.imageId.trim() !== '' && student.imageId !== 'undefined' ? (
                                                                     <AvatarImage
                                                                         src={getStudentImageUrl(student.imageId)}
                                                                         alt={`${student.name}'s profile picture`}
-                                                                        className="object-cover w-full h-full"
+                                                                        className="object-cover w-full h-full rounded-full"
                                                                         onLoad={() => console.log('Grid: Image loaded successfully for:', student.name)}
                                                                         onError={(e) => {
                                                                             console.log('Grid: Image failed to load for:', student.name);
@@ -288,7 +288,7 @@ export default function StudentDirectory() {
                                                                     <AvatarImage
                                                                         src={student.imageUrl}
                                                                         alt={`${student.name}'s profile picture`}
-                                                                        className="object-cover w-full h-full"
+                                                                        className="object-cover w-full h-full rounded-full"
                                                                         onLoad={() => console.log('Grid: Direct imageUrl loaded for:', student.name)}
                                                                         onError={(e) => {
                                                                             console.log('Grid: Direct imageUrl failed for:', student.name);
@@ -296,7 +296,7 @@ export default function StudentDirectory() {
                                                                         }}
                                                                     />
                                                                 ) : null}
-                                                                <AvatarFallback className={`bg-gradient-to-br ${colorTheme.bg} text-white font-semibold text-sm rounded-lg flex items-center justify-center`}>
+                                                                <AvatarFallback className={`bg-gradient-to-br ${colorTheme.bg} text-white font-semibold text-sm rounded-full flex items-center justify-center`}>
                                                                     {getInitials(student.name)}
                                                                 </AvatarFallback>
                                                             </Avatar>
@@ -372,12 +372,12 @@ export default function StudentDirectory() {
                                                     <div className="p-6 flex flex-col gap-4">
                                                         {/* Header with avatar and basic info */}
                                                         <div className="flex items-center gap-4">
-                                                            <Avatar className="h-12 w-12 rounded-lg overflow-hidden">
+                                                            <Avatar className="h-12 w-12 rounded-full overflow-hidden">
                                                                 {student.imageId && student.imageId.trim() !== '' && student.imageId !== 'undefined' ? (
                                                                     <AvatarImage
                                                                         src={getStudentImageUrl(student.imageId)}
                                                                         alt={`${student.name}'s profile picture`}
-                                                                        className="object-cover w-full h-full"
+                                                                        className="object-cover w-full h-full rounded-full"
                                                                         onLoad={() => console.log('List: Image loaded successfully for:', student.name)}
                                                                         onError={(e) => {
                                                                             console.log('List: Image failed to load for:', student.name);
@@ -388,7 +388,7 @@ export default function StudentDirectory() {
                                                                     <AvatarImage
                                                                         src={student.imageUrl}
                                                                         alt={`${student.name}'s profile picture`}
-                                                                        className="object-cover w-full h-full"
+                                                                        className="object-cover w-full h-full rounded-full"
                                                                         onLoad={() => console.log('List: Direct imageUrl loaded for:', student.name)}
                                                                         onError={(e) => {
                                                                             console.log('List: Direct imageUrl failed for:', student.name);
@@ -396,7 +396,7 @@ export default function StudentDirectory() {
                                                                         }}
                                                                     />
                                                                 ) : null}
-                                                                <AvatarFallback className={`bg-gradient-to-br ${colorTheme.bg} text-white font-semibold text-sm rounded-lg flex items-center justify-center`}>
+                                                                <AvatarFallback className={`bg-gradient-to-br ${colorTheme.bg} text-white font-semibold text-sm rounded-full flex items-center justify-center`}>
                                                                     {getInitials(student.name)}
                                                                 </AvatarFallback>
                                                             </Avatar>

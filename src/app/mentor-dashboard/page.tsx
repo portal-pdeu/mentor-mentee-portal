@@ -3,6 +3,8 @@
 
 import { useAppSelector } from "@/GlobalRedux/hooks";
 import { FiMenu, FiX, FiGrid, FiList, FiUser, FiUsers, FiBarChart2, FiCalendar, FiMail, FiLogOut, FiMapPin } from "react-icons/fi";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { getStudentImageUrl, getInitials, hasValidImage } from "@/lib/imageUtils";
 import { useState, useEffect, useCallback } from "react";
 import { Student, Faculty } from "@/types";
 import { getMenteesByMentorId, getAllStudents, getFacultyByDocId } from "./actions";
@@ -79,7 +81,7 @@ export default function MentorDashboard() {
                             email: 'test.student@sot.pdpu.ac.in',
                             rollNo: '02BCP001',
                             imageUrl: 'https://via.placeholder.com/150/4F46E5/FFFFFF?text=T1',
-                            imageId: 'test-img-1',
+                            imageId: '687f5a76003d44a72fa2', // TS 1 imageId
                             mentorId: user.userId,
                             projectRequestStatus: 'Accepted',
                             IA1: 8.5,
@@ -96,7 +98,7 @@ export default function MentorDashboard() {
                             email: 'test.student2@sot.pdpu.ac.in',
                             rollNo: '02BCP002',
                             imageUrl: 'https://via.placeholder.com/150/4F46E5/FFFFFF?text=T2',
-                            imageId: 'test-img-2',
+                            imageId: '687f5aa80033f7208592', // TS 2 imageId (trying next sequence)
                             mentorId: user.userId,
                             projectRequestStatus: 'Accepted',
                             IA1: 7.5,
@@ -113,7 +115,7 @@ export default function MentorDashboard() {
                             email: 'test.student3@sot.pdpu.ac.in',
                             rollNo: '02BCP003',
                             imageUrl: 'https://via.placeholder.com/150/4F46E5/FFFFFF?text=T3',
-                            imageId: 'test-img-3',
+                            imageId: '687f5aea0039199864c0', // TS 3 imageId (trying next sequence)
                             mentorId: user.userId,
                             projectRequestStatus: 'Accepted',
                             IA1: 9.2,
@@ -130,7 +132,7 @@ export default function MentorDashboard() {
                             email: 'test.student4@sot.pdpu.ac.in',
                             rollNo: '02BCP004',
                             imageUrl: 'https://via.placeholder.com/150/4F46E5/FFFFFF?text=YB',
-                            imageId: 'test-img-4',
+                            imageId: '687f5a76003d44a72fa5', // Yash imageId (trying next sequence)
                             mentorId: user.userId,
                             projectRequestStatus: 'NoRequest',
                             IA1: 6.8,
@@ -437,11 +439,35 @@ export default function MentorDashboard() {
                                                     <div className="p-6 flex flex-col gap-4">
                                                         {/* Header with avatar and basic info */}
                                                         <div className="flex items-center gap-4">
-                                                            <div className={`relative h-12 w-12 rounded-lg bg-gradient-to-br ${colorTheme.bg} flex items-center justify-center shadow-sm`}>
-                                                                <span className="text-white font-semibold text-sm">
-                                                                    {student.name.split(' ').map(n => n[0]).join('')}
-                                                                </span>
-                                                            </div>
+                                                            <Avatar className="h-12 w-12 rounded-full">
+                                                                {hasValidImage(student) && (
+                                                                    <AvatarImage
+                                                                        src={getStudentImageUrl(student.imageId!)}
+                                                                        alt={`${student.name}'s profile picture`}
+                                                                        className="object-cover rounded-full"
+                                                                        onLoad={() => console.log('Mentor Grid: Image loaded successfully for:', student.name)}
+                                                                        onError={(e) => {
+                                                                            console.log('Mentor Grid: Image failed to load for:', student.name);
+                                                                            e.currentTarget.style.display = 'none';
+                                                                        }}
+                                                                    />
+                                                                )}
+                                                                {student.imageUrl && !hasValidImage(student) && (
+                                                                    <AvatarImage
+                                                                        src={student.imageUrl}
+                                                                        alt={`${student.name}'s profile picture`}
+                                                                        className="object-cover rounded-full"
+                                                                        onLoad={() => console.log('Mentor Grid: Direct imageUrl loaded for:', student.name)}
+                                                                        onError={(e) => {
+                                                                            console.log('Mentor Grid: Direct imageUrl failed for:', student.name);
+                                                                            e.currentTarget.style.display = 'none';
+                                                                        }}
+                                                                    />
+                                                                )}
+                                                                <AvatarFallback className="rounded-full text-white font-semibold text-sm bg-gradient-to-br from-blue-600 to-indigo-600">
+                                                                    {getInitials(student.name)}
+                                                                </AvatarFallback>
+                                                            </Avatar>
                                                             <div className="flex-1 min-w-0">
                                                                 <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate">{student.name}</h3>
                                                                 <p className="text-sm text-gray-500 dark:text-gray-400">{student.rollNo}</p>
@@ -512,11 +538,35 @@ export default function MentorDashboard() {
                                                     <div className="p-6 flex flex-col gap-4">
                                                         {/* Header with avatar and basic info */}
                                                         <div className="flex items-center gap-4">
-                                                            <div className={`relative h-12 w-12 rounded-lg bg-gradient-to-br ${colorTheme.bg} flex items-center justify-center shadow-sm`}>
-                                                                <span className="text-white font-semibold text-sm">
-                                                                    {student.name.split(' ').map(n => n[0]).join('')}
-                                                                </span>
-                                                            </div>
+                                                            <Avatar className="h-12 w-12 rounded-full">
+                                                                {hasValidImage(student) && (
+                                                                    <AvatarImage
+                                                                        src={getStudentImageUrl(student.imageId!)}
+                                                                        alt={`${student.name}'s profile picture`}
+                                                                        className="object-cover rounded-full"
+                                                                        onLoad={() => console.log('Mentor List: Image loaded successfully for:', student.name)}
+                                                                        onError={(e) => {
+                                                                            console.log('Mentor List: Image failed to load for:', student.name);
+                                                                            e.currentTarget.style.display = 'none';
+                                                                        }}
+                                                                    />
+                                                                )}
+                                                                {student.imageUrl && !hasValidImage(student) && (
+                                                                    <AvatarImage
+                                                                        src={student.imageUrl}
+                                                                        alt={`${student.name}'s profile picture`}
+                                                                        className="object-cover rounded-full"
+                                                                        onLoad={() => console.log('Mentor List: Direct imageUrl loaded for:', student.name)}
+                                                                        onError={(e) => {
+                                                                            console.log('Mentor List: Direct imageUrl failed for:', student.name);
+                                                                            e.currentTarget.style.display = 'none';
+                                                                        }}
+                                                                    />
+                                                                )}
+                                                                <AvatarFallback className="rounded-full text-white font-semibold text-sm bg-gradient-to-br from-blue-600 to-indigo-600">
+                                                                    {getInitials(student.name)}
+                                                                </AvatarFallback>
+                                                            </Avatar>
                                                             <div className="flex-1 min-w-0">
                                                                 <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate">{student.name}</h3>
                                                                 <p className="text-sm text-gray-500 dark:text-gray-400">{student.rollNo}</p>

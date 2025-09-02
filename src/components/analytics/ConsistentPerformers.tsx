@@ -3,6 +3,8 @@
 import React from 'react';
 import { Student } from '@/types';
 import { FiUsers } from 'react-icons/fi';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { getStudentImageUrl, getInitials, hasValidImage } from '@/lib/imageUtils';
 
 interface ConsistentPerformersProps {
     mentees: Student[];
@@ -47,9 +49,35 @@ const ConsistentPerformers: React.FC<ConsistentPerformersProps> = ({ mentees }) 
                                         }`}>
                                         {index + 1}
                                     </div>
-                                    <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
-                                        {student.name.split(' ').map(n => n[0]).join('')}
-                                    </div>
+                                    <Avatar className="h-10 w-10 rounded-full">
+                                        {hasValidImage(student) && (
+                                            <AvatarImage
+                                                src={getStudentImageUrl(student.imageId!)}
+                                                alt={`${student.name}'s profile picture`}
+                                                className="object-cover rounded-full"
+                                                onLoad={() => console.log('Analytics Consistent: Image loaded for:', student.name)}
+                                                onError={(e) => {
+                                                    console.log('Analytics Consistent: Image failed for:', student.name);
+                                                    e.currentTarget.style.display = 'none';
+                                                }}
+                                            />
+                                        )}
+                                        {student.imageUrl && !hasValidImage(student) && (
+                                            <AvatarImage
+                                                src={student.imageUrl}
+                                                alt={`${student.name}'s profile picture`}
+                                                className="object-cover rounded-full"
+                                                onLoad={() => console.log('Analytics Consistent: Direct imageUrl loaded for:', student.name)}
+                                                onError={(e) => {
+                                                    console.log('Analytics Consistent: Direct imageUrl failed for:', student.name);
+                                                    e.currentTarget.style.display = 'none';
+                                                }}
+                                            />
+                                        )}
+                                        <AvatarFallback className="rounded-full text-white text-sm font-bold bg-gradient-to-br from-green-500 to-emerald-500">
+                                            {getInitials(student.name)}
+                                        </AvatarFallback>
+                                    </Avatar>
                                 </div>
                                 <div className="flex-1">
                                     <h4 className="font-semibold text-gray-900 dark:text-gray-100">{student.name}</h4>
