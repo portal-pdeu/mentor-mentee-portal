@@ -2,7 +2,7 @@
 "use client";
 
 import { useAppSelector } from "@/GlobalRedux/hooks";
-import { FiMenu, FiX, FiGrid, FiList, FiUser, FiUsers, FiBarChart2, FiCalendar, FiMail, FiLogOut, FiMapPin } from "react-icons/fi";
+import { FiMenu, FiX, FiGrid, FiList, FiUser, FiUsers, FiBarChart2, FiCalendar, FiMail, FiLogOut, FiMapPin, FiSearch } from "react-icons/fi";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { getStudentImageUrl, getInitials, hasValidImage } from "@/lib/imageUtils";
 import { useState, useEffect, useCallback } from "react";
@@ -40,9 +40,13 @@ export default function MentorDashboard() {
     const [activeSection, setActiveSection] = useState("mentees");
     const [mentees, setMentees] = useState<Student[]>([]);
     const [allStudents, setAllStudents] = useState<Student[]>([]);
+    const [filteredMentees, setFilteredMentees] = useState<Student[]>([]);
+    const [filteredAllStudents, setFilteredAllStudents] = useState<Student[]>([]);
     const [facultyData, setFacultyData] = useState<Faculty | null>(null);
     const [loading, setLoading] = useState(true);
     const [currentStats, setCurrentStats] = useState(stats);
+    const [searchTerm, setSearchTerm] = useState("");
+    const [sortBy, setSortBy] = useState("name");
 
     const calculateStats = (students: Student[]) => {
         const totalMentees = students.length;
@@ -195,6 +199,53 @@ export default function MentorDashboard() {
         }
     }, [activeSection]);
 
+    // Filter and sort students
+    useEffect(() => {
+        filterAndSortStudents();
+    }, [mentees, allStudents, searchTerm, sortBy]);
+
+    const filterAndSortStudents = () => {
+        // Filter mentees
+        let filteredMenteesData = mentees;
+        if (searchTerm.trim() !== "") {
+            filteredMenteesData = mentees.filter(student =>
+                student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                student.rollNo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                student.email.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+        }
+
+        // Filter all students
+        let filteredAllStudentsData = allStudents;
+        if (searchTerm.trim() !== "") {
+            filteredAllStudentsData = allStudents.filter(student =>
+                student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                student.rollNo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                student.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                student.department.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+        }
+
+        // Sort both arrays
+        const sortFunction = (a: Student, b: Student) => {
+            switch (sortBy) {
+                case "name":
+                    return a.name.localeCompare(b.name);
+                case "cgpa":
+                    const cgpaA = a.IA1 && a.IA2 && a.EndSem ? (a.IA1 + a.IA2 + a.EndSem) / 3 : 0;
+                    const cgpaB = b.IA1 && b.IA2 && b.EndSem ? (b.IA1 + b.IA2 + b.EndSem) / 3 : 0;
+                    return cgpaB - cgpaA; // Descending order
+                case "division":
+                    return a.rollNo.localeCompare(b.rollNo);
+                default:
+                    return 0;
+            }
+        };
+
+        setFilteredMentees([...filteredMenteesData].sort(sortFunction));
+        setFilteredAllStudents([...filteredAllStudentsData].sort(sortFunction));
+    };
+
     const handleNavClick = (sectionId: string) => {
         if (sectionId === "directory") {
             // Navigate to the actual student directory page
@@ -217,7 +268,7 @@ export default function MentorDashboard() {
     };
 
     const getCurrentStudents = () => {
-        return activeSection === "mentees" ? mentees : allStudents;
+        return activeSection === "mentees" ? filteredMentees : filteredAllStudents;
     };
 
     const getCurrentTitle = () => {
@@ -383,15 +434,33 @@ export default function MentorDashboard() {
                 {/* Search and Filter */}
                 {(activeSection === "mentees" || activeSection === "directory") && (
                     <section className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-                        <input
-                            type="text"
-                            placeholder={`Search by name, roll number, or division...`}
-                            className="w-full md:w-1/2 px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                        />
-                        <select className="px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200">
-                            <option>Name</option>
-                            <option>CGPA</option>
-                            <option>Division</option>
+                        <div className="relative w-full md:w-1/2">
+                            <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                            <input
+                                type="text"
+                                placeholder={`Search by name, roll number, or division...`}
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full pl-10 pr-10 py-2 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                            />
+                            {searchTerm && (
+                                <button
+                                    onClick={() => setSearchTerm("")}
+                                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                                    aria-label="Clear search"
+                                >
+                                    <FiX className="w-4 h-4" />
+                                </button>
+                            )}
+                        </div>
+                        <select
+                            value={sortBy}
+                            onChange={(e) => setSortBy(e.target.value)}
+                            className="px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200"
+                        >
+                            <option value="name">Sort by Name</option>
+                            <option value="cgpa">Sort by CGPA</option>
+                            <option value="division">Sort by Division</option>
                         </select>
                     </section>
                 )}
@@ -407,13 +476,29 @@ export default function MentorDashboard() {
                 {/* Students List */}
                 {!loading && (activeSection === "mentees" || activeSection === "directory") && (
                     <section>
-                        <div className="mb-4 text-gray-500 dark:text-gray-400 text-sm">
-                            Showing {getCurrentStudents().length} of {getCurrentStudents().length} students
+                        <div className="mb-4 text-gray-500 dark:text-gray-400 text-sm flex items-center justify-between">
+                            <span>
+                                Showing {getCurrentStudents().length} of {activeSection === "mentees" ? mentees.length : allStudents.length} students
+                            </span>
+                            {searchTerm && (
+                                <button
+                                    onClick={() => setSearchTerm("")}
+                                    className="text-blue-600 dark:text-blue-400 hover:underline text-sm"
+                                >
+                                    Clear search
+                                </button>
+                            )}
                         </div>
                         {getCurrentStudents().length === 0 ? (
                             <div className="text-center py-12">
+                                <FiSearch className="mx-auto h-12 w-12 text-gray-400 mb-4" />
                                 <p className="text-gray-500 dark:text-gray-400">
-                                    {activeSection === "mentees" ? "No mentees assigned yet." : "No students found."}
+                                    {searchTerm
+                                        ? `No students found matching "${searchTerm}"`
+                                        : activeSection === "mentees"
+                                            ? "No mentees assigned yet."
+                                            : "No students found."
+                                    }
                                 </p>
                             </div>
                         ) : (
