@@ -203,7 +203,7 @@ class StudentServerServices {
 
   getStudentFilePreviewUrl(fileId: string) {
     const bucketId = String(process.env.NEXT_PUBLIC_APPWRITE_STUDENT_BUCKET_ID);
-    return `${process.env.NEXT_PUBLIC_APPWRITE_URL}/storage/buckets/${bucketId}/files/${fileId}/preview`;
+    return `${process.env.NEXT_PUBLIC_APPWRITE_URL}/buckets/${bucketId}/storage/files/${fileId}/preview`;
   }
 
   async updateStudentProfilePicture(docId: string, imageUrl: string) {

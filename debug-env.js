@@ -8,7 +8,7 @@ console.log('NEXT_PUBLIC_APPWRITE_STUDENT_COLLECTION_ID:', process.env.NEXT_PUBL
 // Test image URL generation
 if (process.env.NEXT_PUBLIC_APPWRITE_URL && process.env.NEXT_PUBLIC_APPWRITE_STUDENT_BUCKET_ID) {
     const testImageId = 'test123';
-    const testUrl = `${process.env.NEXT_PUBLIC_APPWRITE_URL}/storage/buckets/${process.env.NEXT_PUBLIC_APPWRITE_STUDENT_BUCKET_ID}/files/${testImageId}/preview`;
+    const testUrl = `${process.env.NEXT_PUBLIC_APPWRITE_URL}/storage/${process.env.NEXT_PUBLIC_APPWRITE_STUDENT_BUCKET_ID}/files/${testImageId}`;
     console.log('Test image URL would be:', testUrl);
 } else {
     console.log('Missing required environment variables');

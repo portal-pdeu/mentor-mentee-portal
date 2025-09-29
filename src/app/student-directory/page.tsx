@@ -21,7 +21,7 @@ export default function StudentDirectory() {
     const [searchTerm, setSearchTerm] = useState("");
     const [sortBy, setSortBy] = useState("name");
     const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
-    const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
     useEffect(() => {
         setIsClient(true);
@@ -92,11 +92,11 @@ export default function StudentDirectory() {
 
     const handleViewProfile = (student: Student) => {
         setSelectedStudent(student);
-        setIsProfileModalOpen(true);
+        setIsModalOpen(true);
     };
 
-    const handleCloseProfileModal = () => {
-        setIsProfileModalOpen(false);
+    const handleCloseModal = () => {
+        setIsModalOpen(false);
         setSelectedStudent(null);
     };
 
@@ -192,17 +192,8 @@ export default function StudentDirectory() {
                             placeholder="Search by name, roll number, email, or department..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-10 pr-10 py-2 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                            className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
                         />
-                        {searchTerm && (
-                            <button
-                                onClick={() => setSearchTerm("")}
-                                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-                                aria-label="Clear search"
-                            >
-                                <FiX className="w-4 h-4" />
-                            </button>
-                        )}
                     </div>
                     <select
                         value={sortBy}
@@ -364,7 +355,7 @@ export default function StudentDirectory() {
 
                                                         {/* Action button */}
                                                         <div className="pt-3 border-t border-gray-100 dark:border-gray-800">
-                                                            <button
+                                                            <button 
                                                                 onClick={() => handleViewProfile(student)}
                                                                 className="w-full py-2.5 px-4 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium text-sm hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 shadow-sm"
                                                             >
@@ -467,7 +458,7 @@ export default function StudentDirectory() {
 
                                                         {/* Action button */}
                                                         <div className="pt-3 border-t border-gray-100 dark:border-gray-800">
-                                                            <button
+                                                            <button 
                                                                 onClick={() => handleViewProfile(student)}
                                                                 className="w-full py-2.5 px-4 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium text-sm hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 shadow-sm"
                                                             >
@@ -487,11 +478,13 @@ export default function StudentDirectory() {
             </div>
 
             {/* Student Profile Modal */}
-            <StudentProfileModal
-                student={selectedStudent}
-                isOpen={isProfileModalOpen}
-                onClose={handleCloseProfileModal}
-            />
+            {selectedStudent && (
+                <StudentProfileModal
+                    student={selectedStudent}
+                    isOpen={isModalOpen}
+                    onClose={handleCloseModal}
+                />
+            )}
         </div>
     );
 }
