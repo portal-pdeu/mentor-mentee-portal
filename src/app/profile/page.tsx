@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useAppSelector } from "@/GlobalRedux/hooks";
-import { Faculty } from "@/types";
+import { Faculty, Student } from "@/types";
 import profileService from "@/services/profileService";
 import ErrorBoundary from "@/components/ui/ErrorBoundary";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
@@ -12,6 +12,7 @@ import ContactInformation from "@/components/profile/ContactInformation";
 import AvailableHours from "@/components/profile/AvailableHours";
 import OfficeLocation from "@/components/profile/OfficeLocation";
 import QuickActions from "@/components/profile/QuickActions";
+import StudentProfile from "@/components/profile/StudentProfile";
 
 interface ProfilePageError extends Error {
     component: 'ProfilePage';
@@ -21,10 +22,12 @@ interface ProfilePageError extends Error {
 const ProfilePage: React.FC = () => {
     const user = useAppSelector((state) => state.auth.user);
     const [facultyData, setFacultyData] = useState<Faculty | null>(null);
+    const [studentData, setStudentData] = useState<Student | null>(null);
     const [loading, setLoading] = useState(true);
     const [isHydrated, setIsHydrated] = useState(false);
 
     const isFaculty = user?.type === "Faculty";
+    const isStudent = user?.labels?.includes("Student");
 
     // Handle hydration
     useEffect(() => {
@@ -32,23 +35,49 @@ const ProfilePage: React.FC = () => {
     }, []);
 
     useEffect(() => {
-        const loadFacultyData = async (): Promise<void> => {
-            if (!isHydrated || !isFaculty || !user?.userId) {
+        const loadUserData = async (): Promise<void> => {
+            if (!isHydrated || !user?.userId) {
                 setLoading(false);
                 return;
             }
 
             try {
-                console.log('[ProfilePage] Loading faculty data for userId:', user.userId);
-                const data = await profileService.fetchFacultyData(user.userId);
-                setFacultyData(data);
-                console.log('[ProfilePage] Faculty data loaded successfully');
+                if (isFaculty) {
+                    console.log('[ProfilePage] Loading faculty data for userId:', user.userId);
+                    const data = await profileService.fetchFacultyData(user.userId);
+                    setFacultyData(data);
+                    console.log('[ProfilePage] Faculty data loaded successfully');
+                } else if (isStudent) {
+                    console.log('[ProfilePage] Loading student data for userId:', user.userId);
+                    // For now, create mock student data. In real implementation, fetch from API
+                    const mockStudentData: Student = {
+                        studentId: user.userId,
+                        name: user.name || "Student Name",
+                        email: user.email || "",
+                        rollNo: "22BCP001", // This should come from the database
+                        imageUrl: "",
+                        imageId: "", // This should come from the database
+                        mentorId: "faculty_123", // This should come from the database
+                        projectRequestStatus: "Accepted",
+                        IA1: 8.5,
+                        IA2: 9.0,
+                        EndSem: 8.8,
+                        total: 0,
+                        school: "SOT",
+                        department: "CSE",
+                        password: "",
+                        phoneNumber: "+91 9876543210",
+                        fcmToken: []
+                    };
+                    setStudentData(mockStudentData);
+                    console.log('[ProfilePage] Student data loaded successfully');
+                }
             } catch (error) {
                 const profilePageError: ProfilePageError = {
                     name: 'ProfilePageError',
-                    message: `Failed to load faculty data: ${error instanceof Error ? error.message : 'Unknown error'}`,
+                    message: `Failed to load user data: ${error instanceof Error ? error.message : 'Unknown error'}`,
                     component: 'ProfilePage',
-                    action: 'loadFacultyData'
+                    action: 'loadUserData'
                 };
                 console.error('[ProfilePage] loadFacultyData Error:', profilePageError);
 
@@ -59,8 +88,8 @@ const ProfilePage: React.FC = () => {
             }
         };
 
-        loadFacultyData();
-    }, [isHydrated, user?.userId, isFaculty]);
+        loadUserData();
+    }, [isHydrated, user?.userId, isFaculty, isStudent]);
 
     // Show loading skeleton during hydration to prevent mismatch
     if (!isHydrated) {
@@ -84,7 +113,7 @@ const ProfilePage: React.FC = () => {
     }
 
     // Authorization check (only after hydration)
-    if (!isFaculty) {
+    if (!isFaculty && !isStudent) {
         return (
             <ErrorBoundary>
                 <div className="flex flex-col items-center justify-center min-h-screen">
@@ -101,7 +130,9 @@ const ProfilePage: React.FC = () => {
                 <div className="min-h-screen bg-background text-foreground">
                     <div className="flex flex-col w-full max-w-6xl mx-auto py-10 px-4 md:px-8">
                         <header className="mb-8">
-                            <h1 className="text-3xl font-bold">Faculty Profile</h1>
+                            <h1 className="text-3xl font-bold">
+                                {isStudent ? "Student Profile" : "Faculty Profile"}
+                            </h1>
                             <p className="text-gray-500 dark:text-gray-400 text-base">
                                 View and manage your profile information
                             </p>
@@ -116,8 +147,13 @@ const ProfilePage: React.FC = () => {
                             />
                         )}
 
-                        {/* Profile Content */}
-                        {!loading && (
+                        {/* Student Profile */}
+                        {!loading && isStudent && studentData && (
+                            <StudentProfile student={studentData} />
+                        )}
+
+                        {/* Faculty Profile Content */}
+                        {!loading && isFaculty && (
                             <div className="max-w-5xl mx-auto">
                                 <ErrorBoundary>
                                     <ProfileHeader

@@ -11,6 +11,7 @@ interface MeetingsListProps {
     selectedMeetingId?: string;
     onMeetingSelect: (meeting: Meeting) => void;
     onMeetingDeleted: (meetingId: string) => void;
+    isStudent?: boolean;
 }
 
 interface MeetingsListError extends Error {
@@ -22,7 +23,8 @@ const MeetingsList: React.FC<MeetingsListProps> = ({
     meetings,
     selectedMeetingId,
     onMeetingSelect,
-    onMeetingDeleted
+    onMeetingDeleted,
+    isStudent = false
 }) => {
     const [showMenuFor, setShowMenuFor] = useState<string | null>(null);
     const [deletingMeeting, setDeletingMeeting] = useState<string | null>(null);
@@ -64,15 +66,57 @@ const MeetingsList: React.FC<MeetingsListProps> = ({
         });
     };
 
-    const getPastMeetings = (): Meeting[] => {
-        const now = new Date();
+    const getRejectedMeetings = (): Meeting[] => {
+        if (!isStudent) return [];
+
         return meetings.filter(meeting => {
-            const meetingDate = new Date(`${meeting.date}T${meeting.time}`);
-            return meetingDate < now || meeting.status === 'completed';
+            const currentStudent = meeting.invitedStudents.find(
+                student => student.responseStatus === 'declined'
+            );
+            return currentStudent !== undefined;
         }).sort((a, b) => {
             const dateA = new Date(`${a.date}T${a.time}`);
             const dateB = new Date(`${b.date}T${b.time}`);
             return dateB.getTime() - dateA.getTime(); // Most recent first
+        });
+    };
+
+    const getCompletedMeetings = (): Meeting[] => {
+        const now = new Date();
+        return meetings.filter(meeting => {
+            if (isStudent) {
+                // For students, only show meetings they attended (accepted and completed)
+                const currentStudent = meeting.invitedStudents.find(
+                    student => student.responseStatus === 'accepted'
+                );
+                return currentStudent && (meeting.status === 'completed' ||
+                    (new Date(`${meeting.date}T${meeting.time}`) < now && meeting.status === 'scheduled'));
+            } else {
+                // For faculty, show all past meetings
+                const meetingDate = new Date(`${meeting.date}T${meeting.time}`);
+                return meetingDate < now || meeting.status === 'completed';
+            }
+        }).sort((a, b) => {
+            const dateA = new Date(`${a.date}T${a.time}`);
+            const dateB = new Date(`${b.date}T${b.time}`);
+            return dateB.getTime() - dateA.getTime(); // Most recent first
+        });
+    };
+
+    const getUpcomingMeetingsForStudent = (): Meeting[] => {
+        if (!isStudent) return getUpcomingMeetings();
+
+        const now = new Date();
+        return meetings.filter(meeting => {
+            const meetingDate = new Date(`${meeting.date}T${meeting.time}`);
+            const currentStudent = meeting.invitedStudents.find(
+                student => student.responseStatus !== 'declined'
+            );
+            return meetingDate >= now && meeting.status === 'scheduled' && currentStudent;
+        }).sort((a, b) => {
+            const dateA = new Date(`${a.date}T${a.time}`);
+            const dateB = new Date(`${b.date}T${b.time}`);
+            return dateA.getTime() - dateB.getTime();
         });
     };
 
@@ -90,13 +134,13 @@ const MeetingsList: React.FC<MeetingsListProps> = ({
                 onClick={() => !isDeleting && onMeetingSelect(meeting)}
             >
                 {/* Status Badge - Top Right */}
-                <span className={`absolute top-2 right-2 z-10 inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold shadow ${meetingsService.getStatusBadgeColor(meeting.status)} bg-white dark:bg-gray-900`}
+                <span className={`absolute top-3 right-3 z-10 inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${meetingsService.getStatusBadgeColor(meeting.status)}`}
                 >
                     {meeting.status}
                 </span>
 
                 {/* Meeting Header */}
-                <div className="flex items-start justify-between mb-3">
+                <div className="flex items-start justify-between mb-3 pr-20">
                     <div className="flex-1 min-w-0">
                         <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate">
                             {meeting.title}
@@ -131,46 +175,63 @@ const MeetingsList: React.FC<MeetingsListProps> = ({
                 </div>
 
                 {/* Actions Menu */}
-                <div className="absolute top-2 right-2 mt-8">
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            setShowMenuFor(showMenuFor === meeting.id ? null : meeting.id);
-                        }}
-                        className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                    >
-                        <FiMoreVertical className="w-4 h-4 text-gray-400" />
-                    </button>
+                {!isStudent && (
+                    <div className="absolute top-10 right-3">
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setShowMenuFor(showMenuFor === meeting.id ? null : meeting.id);
+                            }}
+                            className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                        >
+                            <FiMoreVertical className="w-4 h-4 text-gray-400" />
+                        </button>
 
-                    {showMenuFor === meeting.id && (
-                        <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-900 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-50">
-                            <div className="py-1">
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        window.open(meeting.meetingUrl, '_blank');
-                                        setShowMenuFor(null);
-                                    }}
-                                    className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center gap-2"
-                                >
-                                    <FiExternalLink className="w-4 h-4" />
-                                    Open Meeting Link
-                                </button>
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleDeleteMeeting(meeting.id);
-                                    }}
-                                    disabled={isDeleting}
-                                    className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2 disabled:opacity-50"
-                                >
-                                    <FiTrash2 className="w-4 h-4" />
-                                    {isDeleting ? 'Deleting...' : 'Delete Meeting'}
-                                </button>
+                        {showMenuFor === meeting.id && (
+                            <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-900 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-50">
+                                <div className="py-1">
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            window.open(meeting.meetingUrl, '_blank');
+                                            setShowMenuFor(null);
+                                        }}
+                                        className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center gap-2"
+                                    >
+                                        <FiExternalLink className="w-4 h-4" />
+                                        Open Meeting Link
+                                    </button>
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleDeleteMeeting(meeting.id);
+                                        }}
+                                        disabled={isDeleting}
+                                        className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2 disabled:opacity-50"
+                                    >
+                                        <FiTrash2 className="w-4 h-4" />
+                                        {isDeleting ? 'Deleting...' : 'Delete Meeting'}
+                                    </button>
+                                </div>
                             </div>
-                        </div>
-                    )}
-                </div>
+                        )}
+                    </div>
+                )}
+
+                {/* Join Meeting Button for Students */}
+                {isStudent && meeting.status === 'scheduled' && (
+                    <div className="absolute top-10 right-3">
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                window.open(meeting.meetingUrl, '_blank');
+                            }}
+                            className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg transition-colors duration-200"
+                        >
+                            Join Meeting
+                        </button>
+                    </div>
+                )}
 
                 {/* Loading overlay for deletion */}
                 {isDeleting && (
@@ -182,14 +243,87 @@ const MeetingsList: React.FC<MeetingsListProps> = ({
         );
     };
 
+    const renderRejectedMeetingCard = (meeting: Meeting): JSX.Element => {
+        const isSelected = selectedMeetingId === meeting.id;
+        const currentStudent = meeting.invitedStudents.find(s => s.responseStatus === 'declined');
+        const declineReason = currentStudent?.declineReason || 'No reason provided';
+
+        return (
+            <div
+                key={meeting.id}
+                className={`relative group cursor-pointer transition-all duration-200 ${isSelected
+                    ? 'bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800 shadow-md'
+                    : 'bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800/50 border-gray-200/50 dark:border-gray-800/50'
+                    } border rounded-xl p-4`}
+                onClick={() => onMeetingSelect(meeting)}
+            >
+                {/* Status Badge - Top Right */}
+                <span className="absolute top-3 right-3 z-10 inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300">
+                    Rejected
+                </span>
+
+                {/* Meeting Header */}
+                <div className="flex items-start justify-between mb-3 pr-20">
+                    <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate">
+                            {meeting.title}
+                        </h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">
+                            {meeting.description}
+                        </p>
+                    </div>
+                </div>
+
+                {/* Meeting Info */}
+                <div className="space-y-2 mb-3">
+                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                        <FiCalendar className="w-4 h-4" />
+                        <span>{meetingsService.formatMeetingDateTime(meeting.date, meeting.time)}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                        <FiClock className="w-4 h-4" />
+                        <span>{meeting.duration} minutes</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                        <FiUsers className="w-4 h-4" />
+                        <span>Mentor: {meeting.mentorName}</span>
+                    </div>
+                </div>
+
+                {/* Purpose */}
+                <div className="mb-3">
+                    <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300">
+                        {meeting.purpose}
+                    </span>
+                </div>
+
+                {/* Rejection Reason */}
+                <div className="mt-3 p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800/50 rounded-lg">
+                    <div className="flex items-start gap-2">
+                        <div className="w-2 h-2 bg-red-500 rounded-full mt-2 flex-shrink-0"></div>
+                        <div>
+                            <p className="text-sm font-medium text-red-800 dark:text-red-300 mb-1">
+                                Reason for not attending:
+                            </p>
+                            <p className="text-sm text-red-700 dark:text-red-400">
+                                {declineReason}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
     try {
-        const upcomingMeetings = getUpcomingMeetings();
-        const pastMeetings = getPastMeetings();
+        const upcomingMeetings = isStudent ? getUpcomingMeetingsForStudent() : getUpcomingMeetings();
+        const completedMeetings = getCompletedMeetings();
+        const rejectedMeetings = getRejectedMeetings();
 
         return (
             <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200/50 dark:border-gray-800/50 p-6">
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-6">
-                    Your Meetings
+                    {isStudent ? "My Meetings" : "Your Meetings"}
                 </h2>
 
                 {meetings.length === 0 ? (
@@ -199,7 +333,7 @@ const MeetingsList: React.FC<MeetingsListProps> = ({
                             No Meetings Yet
                         </h3>
                         <p className="text-gray-500 dark:text-gray-400">
-                            Create your first meeting to get started
+                            {isStudent ? "No meetings scheduled with your mentor yet" : "Create your first meeting to get started"}
                         </p>
                     </div>
                 ) : (
@@ -216,14 +350,26 @@ const MeetingsList: React.FC<MeetingsListProps> = ({
                             </div>
                         )}
 
-                        {/* Past Meetings */}
-                        {pastMeetings.length > 0 && (
+                        {/* Completed/Past Meetings */}
+                        {completedMeetings.length > 0 && (
                             <div>
                                 <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-3">
-                                    Past ({pastMeetings.length})
+                                    {isStudent ? "Recent Meetings" : "Past"} ({completedMeetings.length})
                                 </h3>
                                 <div className="space-y-3">
-                                    {pastMeetings.map(renderMeetingCard)}
+                                    {completedMeetings.map(renderMeetingCard)}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Rejected Meetings (Students Only) */}
+                        {isStudent && rejectedMeetings.length > 0 && (
+                            <div>
+                                <h3 className="text-sm font-semibold text-red-700 dark:text-red-300 uppercase tracking-wider mb-3">
+                                    Rejected ({rejectedMeetings.length})
+                                </h3>
+                                <div className="space-y-3">
+                                    {rejectedMeetings.map(meeting => renderRejectedMeetingCard(meeting))}
                                 </div>
                             </div>
                         )}

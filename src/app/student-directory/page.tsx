@@ -5,7 +5,7 @@ import { FiMenu, FiX, FiGrid, FiList, FiUser, FiSearch, FiMail } from "react-ico
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useState, useEffect } from "react";
 import { Student } from "@/types";
-import { getAllStudents } from "../mentor-dashboard/actions";
+import { getAllStudents } from "./actions";
 import { getStudentImageUrl, getInitials, hasValidImage } from "@/lib/imageUtils";
 import StudentProfileModal from "@/components/ui/StudentProfileModal";
 import "./styles.css";
@@ -106,12 +106,14 @@ export default function StudentDirectory() {
     }
 
     const isFaculty = user?.labels && user.labels.includes("Faculty");
+    const isStudent = user?.labels && user.labels.includes("Student");
+    const isAuthorized = isFaculty || isStudent;
 
-    if (!isFaculty) {
+    if (!isAuthorized) {
         return (
             <div className="flex flex-col items-center justify-center min-h-screen">
                 <h1 className="text-2xl font-bold">Unauthorized</h1>
-                <p className="text-lg">You are not authorized to view this page.</p>
+                <p className="text-lg">You need to be logged in to view this page.</p>
             </div>
         );
     }
@@ -138,14 +140,26 @@ export default function StudentDirectory() {
                             </button>
                         </div>
                         <nav className="mt-4 flex flex-col gap-1 px-4">
-                            <a
-                                href="/mentor-dashboard"
-                                className="flex items-center gap-3 px-4 py-2 rounded-lg text-base font-medium text-gray-700 dark:text-gray-200 hover:bg-green-50 dark:hover:bg-green-900/30 transition"
-                                onClick={() => setMenuOpen(false)}
-                            >
-                                <FiUser />
-                                <span>My Mentees</span>
-                            </a>
+                            {isFaculty && (
+                                <a
+                                    href="/mentor-dashboard"
+                                    className="flex items-center gap-3 px-4 py-2 rounded-lg text-base font-medium text-gray-700 dark:text-gray-200 hover:bg-green-50 dark:hover:bg-green-900/30 transition"
+                                    onClick={() => setMenuOpen(false)}
+                                >
+                                    <FiUser />
+                                    <span>My Mentees</span>
+                                </a>
+                            )}
+                            {isStudent && (
+                                <a
+                                    href="/my-mentor"
+                                    className="flex items-center gap-3 px-4 py-2 rounded-lg text-base font-medium text-gray-700 dark:text-gray-200 hover:bg-green-50 dark:hover:bg-green-900/30 transition"
+                                    onClick={() => setMenuOpen(false)}
+                                >
+                                    <FiUser />
+                                    <span>My Mentor</span>
+                                </a>
+                            )}
                             <div
                                 className="flex items-center gap-3 px-4 py-2 rounded-lg text-base font-bold text-black dark:text-white shadow-lg border-2 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 border-green-200 dark:border-emerald-700"
                             >
@@ -163,7 +177,9 @@ export default function StudentDirectory() {
                 <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
                     <div>
                         <h1 className="text-3xl font-bold">Student Directory</h1>
-                        <p className="text-gray-500 dark:text-gray-400 text-base">Browse all students in the college</p>
+                        <p className="text-gray-500 dark:text-gray-400 text-base">
+                            {isFaculty ? "Browse all students in the college" : "Explore your fellow students"}
+                        </p>
                     </div>
                     <div className="flex items-center gap-2">
                         <button
@@ -355,7 +371,7 @@ export default function StudentDirectory() {
 
                                                         {/* Action button */}
                                                         <div className="pt-3 border-t border-gray-100 dark:border-gray-800">
-                                                            <button 
+                                                            <button
                                                                 onClick={() => handleViewProfile(student)}
                                                                 className="w-full py-2.5 px-4 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium text-sm hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 shadow-sm"
                                                             >
@@ -458,7 +474,7 @@ export default function StudentDirectory() {
 
                                                         {/* Action button */}
                                                         <div className="pt-3 border-t border-gray-100 dark:border-gray-800">
-                                                            <button 
+                                                            <button
                                                                 onClick={() => handleViewProfile(student)}
                                                                 className="w-full py-2.5 px-4 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium text-sm hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 shadow-sm"
                                                             >

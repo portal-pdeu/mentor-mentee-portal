@@ -3,8 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { CreateMeetingData, Student } from '@/types';
 import meetingsService from '@/services/meetingsService';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { getStudentImageUrl, getInitials, hasValidImage } from '@/lib/imageUtils';
+import notificationService from '@/services/notificationService';
 import {
     FiCalendar,
     FiClock,
@@ -22,6 +21,7 @@ interface CreateMeetingProps {
     mentorName: string;
     onMeetingCreated: (meeting: any) => void;
     onCancel: () => void;
+    isStudent?: boolean;
 }
 
 interface CreateMeetingError extends Error {
@@ -29,7 +29,13 @@ interface CreateMeetingError extends Error {
     action?: string;
 }
 
-const CreateMeeting: React.FC<CreateMeetingProps> = ({ mentorId, mentorName, onMeetingCreated, onCancel }) => {
+const CreateMeeting: React.FC<CreateMeetingProps> = ({
+    mentorId,
+    mentorName,
+    onMeetingCreated,
+    onCancel,
+    isStudent = false
+}) => {
 
     // State hooks
     const [formData, setFormData] = useState<CreateMeetingData>({
@@ -86,7 +92,12 @@ const CreateMeeting: React.FC<CreateMeetingProps> = ({ mentorId, mentorName, onM
         if (!formData.time) newErrors.time = 'Time is required';
         if (!formData.duration) newErrors.duration = 'Duration is required';
         if (!formData.meetingUrl) newErrors.meetingUrl = 'Meeting URL is required';
-        if (selectedStudents.length === 0) newErrors.students = 'Please select at least one student';
+
+        // Only require student selection for faculty, not for students
+        if (!isStudent && selectedStudents.length === 0) {
+            newErrors.students = 'Please select at least one student';
+        }
+
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
@@ -145,6 +156,20 @@ const CreateMeeting: React.FC<CreateMeetingProps> = ({ mentorId, mentorName, onM
                 mentorId,
                 mentorName
             );
+
+            // Create notifications for invited students if not a student creating a meeting
+            if (!isStudent && selectedStudents.length > 0) {
+                try {
+                    await notificationService.createMeetingNotifications(
+                        createdMeeting,
+                        selectedStudents.map(s => s.studentId)
+                    );
+                    console.log('[CreateMeeting] Notifications created for students:', selectedStudents.map(s => s.studentId));
+                } catch (notificationError) {
+                    console.error('[CreateMeeting] Failed to create notifications:', notificationError);
+                    // Don't fail the meeting creation if notifications fail
+                }
+            }
 
             console.log('[CreateMeeting] Meeting created successfully:', createdMeeting.id);
             onMeetingCreated(createdMeeting);
@@ -344,113 +369,115 @@ const CreateMeeting: React.FC<CreateMeetingProps> = ({ mentorId, mentorName, onM
                     </div>
                 </div>
 
-                {/* Student Selection */}
-                <div>
-                    <div className="flex items-center justify-between mb-4">
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                            <FiUsers className="w-4 h-4 inline mr-1" />
-                            Invite Students *
-                        </label>
-                        <button
-                            type="button"
-                            onClick={() => setShowStudentSelector(!showStudentSelector)}
-                            className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors flex items-center gap-1"
-                        >
-                            <FiPlus className="w-3 h-3" />
-                            {selectedStudents.length > 0 ? `${selectedStudents.length} Selected` : 'Select Students'}
-                        </button>
-                    </div>
+                {/* Student Selection - Only for Faculty */}
+                {!isStudent && (
+                    <div>
+                        <div className="flex items-center justify-between mb-4">
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                <FiUsers className="w-4 h-4 inline mr-1" />
+                                Invite Students *
+                            </label>
+                            <button
+                                type="button"
+                                onClick={() => setShowStudentSelector(!showStudentSelector)}
+                                className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors flex items-center gap-1"
+                            >
+                                <FiPlus className="w-3 h-3" />
+                                {selectedStudents.length > 0 ? `${selectedStudents.length} Selected` : 'Select Students'}
+                            </button>
+                        </div>
 
-                    {errors.students && (
-                        <p className="text-red-500 text-sm mb-2">{errors.students}</p>
-                    )}
+                        {errors.students && (
+                            <p className="text-red-500 text-sm mb-2">{errors.students}</p>
+                        )}
 
-                    {/* Selected Students */}
-                    {selectedStudents.length > 0 && (
-                        <div className="mb-4">
-                            <div className="flex flex-wrap gap-2">
-                                {selectedStudents.map(student => (
-                                    <div
-                                        key={student.studentId}
-                                        className="inline-flex items-center gap-2 px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded-full text-sm"
-                                    >
-                                        <span>{student.name}</span>
-                                        <button
-                                            type="button"
-                                            onClick={() => handleStudentToggle(student)}
-                                            className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                        {/* Selected Students */}
+                        {selectedStudents.length > 0 && (
+                            <div className="mb-4">
+                                <div className="flex flex-wrap gap-2">
+                                    {selectedStudents.map(student => (
+                                        <div
+                                            key={student.studentId}
+                                            className="inline-flex items-center gap-2 px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded-full text-sm"
                                         >
-                                            <FiX className="w-3 h-3" />
-                                        </button>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Student Selector */}
-                    {showStudentSelector && (
-                        <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-                            {/* Search and Select All */}
-                            <div className="flex flex-col sm:flex-row gap-3 mb-3">
-                                <div className="relative flex-1">
-                                    <input
-                                        type="text"
-                                        placeholder="Search students by name, roll number, or email..."
-                                        value={searchTerm}
-                                        onChange={e => setSearchTerm(e.target.value)}
-                                        className="w-full pl-3 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-gray-100"
-                                    />
-                                </div>
-                                <button
-                                    type="button"
-                                    onClick={handleSelectAll}
-                                    className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors whitespace-nowrap"
-                                >
-                                    {getFilteredStudents().every(student => selectedStudents.find(s => s.studentId === student.studentId)) ? 'Deselect All' : 'Select All'}
-                                </button>
-                            </div>
-                            {isLoadingStudents ? (
-                                <div className="text-center py-4">
-                                    <FiLoader className="w-5 h-5 animate-spin mx-auto text-gray-400" />
-                                    <p className="text-gray-500 text-sm mt-1">Loading students...</p>
-                                </div>
-                            ) : getFilteredStudents().length === 0 ? (
-                                <div className="text-center py-4">
-                                    <p className="text-gray-500">No students found</p>
-                                </div>
-                            ) : (
-                                <div className="space-y-2 max-h-60 overflow-y-auto">
-                                    {getFilteredStudents().map(student => {
-                                        const isSelected = selectedStudents.find(s => s.studentId === student.studentId);
-                                        return (
-                                            <div
-                                                key={student.studentId}
-                                                className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition-colors ${isSelected
-                                                    ? 'bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800'
-                                                    : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'
-                                                    }`}
+                                            <span>{student.name}</span>
+                                            <button
+                                                type="button"
                                                 onClick={() => handleStudentToggle(student)}
+                                                className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
                                             >
-                                                <div className="flex-1">
-                                                    <h4 className="font-medium text-gray-900 dark:text-gray-100">
-                                                        {student.name}
-                                                    </h4>
-                                                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                                                        {student.rollNo} • {student.email}
-                                                    </p>
-                                                </div>
-                                                {isSelected && (
-                                                    <FiCheck className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                                                )}
-                                            </div>
-                                        );
-                                    })}
+                                                <FiX className="w-3 h-3" />
+                                            </button>
+                                        </div>
+                                    ))}
                                 </div>
-                            )}
-                        </div>
-                    )}
-                </div>
+                            </div>
+                        )}
+
+                        {/* Student Selector */}
+                        {showStudentSelector && (
+                            <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                                {/* Search and Select All */}
+                                <div className="flex flex-col sm:flex-row gap-3 mb-3">
+                                    <div className="relative flex-1">
+                                        <input
+                                            type="text"
+                                            placeholder="Search students by name, roll number, or email..."
+                                            value={searchTerm}
+                                            onChange={e => setSearchTerm(e.target.value)}
+                                            className="w-full pl-3 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-gray-100"
+                                        />
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={handleSelectAll}
+                                        className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors whitespace-nowrap"
+                                    >
+                                        {getFilteredStudents().every(student => selectedStudents.find(s => s.studentId === student.studentId)) ? 'Deselect All' : 'Select All'}
+                                    </button>
+                                </div>
+                                {isLoadingStudents ? (
+                                    <div className="text-center py-4">
+                                        <FiLoader className="w-5 h-5 animate-spin mx-auto text-gray-400" />
+                                        <p className="text-gray-500 text-sm mt-1">Loading students...</p>
+                                    </div>
+                                ) : getFilteredStudents().length === 0 ? (
+                                    <div className="text-center py-4">
+                                        <p className="text-gray-500">No students found</p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-2 max-h-60 overflow-y-auto">
+                                        {getFilteredStudents().map(student => {
+                                            const isSelected = selectedStudents.find(s => s.studentId === student.studentId);
+                                            return (
+                                                <div
+                                                    key={student.studentId}
+                                                    className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition-colors ${isSelected
+                                                        ? 'bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800'
+                                                        : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'
+                                                        }`}
+                                                    onClick={() => handleStudentToggle(student)}
+                                                >
+                                                    <div className="flex-1">
+                                                        <h4 className="font-medium text-gray-900 dark:text-gray-100">
+                                                            {student.name}
+                                                        </h4>
+                                                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                                                            {student.rollNo} • {student.email}
+                                                        </p>
+                                                    </div>
+                                                    {isSelected && (
+                                                        <FiCheck className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                )}
 
                 {/* Action Buttons */}
                 <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-800">

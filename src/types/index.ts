@@ -153,6 +153,7 @@ export interface InvitedStudent {
   rollNo: string;
   responseStatus: 'pending' | 'accepted' | 'declined';
   joinedAt?: string;
+  declineReason?: string; // Reason for declining the meeting
 }
 
 export interface CreateMeetingData {
@@ -165,6 +166,25 @@ export interface CreateMeetingData {
   meetingPassword?: string;
   purpose: string;
   invitedStudentIds: string[];
+}
+
+// Meeting Notification System
+export interface MeetingNotification {
+  id: string;
+  meetingId: string;
+  meetingTitle: string;
+  meetingDescription: string;
+  meetingDate: string;
+  meetingTime: string;
+  duration: number;
+  meetingUrl: string;
+  mentorId: string;
+  mentorName: string;
+  studentId: string;
+  status: 'pending' | 'accepted' | 'declined';
+  declineReason?: string;
+  createdAt: string;
+  respondedAt?: string;
 }
 
 export type tokenInfo = {

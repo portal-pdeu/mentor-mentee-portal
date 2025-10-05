@@ -85,7 +85,7 @@ export default function MentorDashboard() {
                             email: 'test.student@sot.pdpu.ac.in',
                             rollNo: '02BCP001',
                             imageUrl: 'https://via.placeholder.com/150/4F46E5/FFFFFF?text=T1',
-                            imageId: '687f5a76003d44a72fa2', // TS 1 imageId
+                            imageId: '', // TS 1 imageId (temporarily disabled)
                             mentorId: user.userId,
                             projectRequestStatus: 'Accepted',
                             IA1: 8.5,
@@ -102,7 +102,7 @@ export default function MentorDashboard() {
                             email: 'test.student2@sot.pdpu.ac.in',
                             rollNo: '02BCP002',
                             imageUrl: 'https://via.placeholder.com/150/4F46E5/FFFFFF?text=T2',
-                            imageId: '687f5aa80033f7208592', // TS 2 imageId (trying next sequence)
+                            imageId: '', // TS 2 imageId (temporarily disabled)
                             mentorId: user.userId,
                             projectRequestStatus: 'Accepted',
                             IA1: 7.5,
@@ -119,7 +119,7 @@ export default function MentorDashboard() {
                             email: 'test.student3@sot.pdpu.ac.in',
                             rollNo: '02BCP003',
                             imageUrl: 'https://via.placeholder.com/150/4F46E5/FFFFFF?text=T3',
-                            imageId: '687f5aea0039199864c0', // TS 3 imageId (trying next sequence)
+                            imageId: '', // TS 3 imageId (temporarily disabled)
                             mentorId: user.userId,
                             projectRequestStatus: 'Accepted',
                             IA1: 9.2,
@@ -136,7 +136,7 @@ export default function MentorDashboard() {
                             email: 'test.student4@sot.pdpu.ac.in',
                             rollNo: '02BCP004',
                             imageUrl: 'https://via.placeholder.com/150/4F46E5/FFFFFF?text=YB',
-                            imageId: '687f5a76003d44a72fa5', // Yash imageId (trying next sequence)
+                            imageId: '', // Yash imageId (temporarily disabled)
                             mentorId: user.userId,
                             projectRequestStatus: 'NoRequest',
                             IA1: 6.8,

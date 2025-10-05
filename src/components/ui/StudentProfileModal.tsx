@@ -6,7 +6,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import Modal from './Modal';
 import { Student, Faculty } from '@/types';
 import { getStudentImageUrl, getInitials } from '@/lib/imageUtils';
-import { getFacultyByDocId } from '@/app/mentor-dashboard/actions';
+import { getFacultyByDocId } from '@/app/student-directory/actions';
 
 interface StudentProfileModalProps {
     student: Student | null;

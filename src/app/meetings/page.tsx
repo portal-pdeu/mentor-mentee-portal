@@ -9,8 +9,9 @@ import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import MeetingsList from "@/components/meetings/MeetingsList";
 import MeetingDetails from "@/components/meetings/MeetingDetails";
 import CreateMeeting from "@/components/meetings/CreateMeeting";
+import MeetingNotifications from "@/components/meetings/MeetingNotifications";
 import Modal from "@/components/ui/Modal";
-import { FiPlus, FiCalendar } from "react-icons/fi";
+import { FiPlus, FiCalendar, FiBell } from "react-icons/fi";
 
 interface MeetingsPageError extends Error {
     component: 'MeetingsPage';
@@ -27,6 +28,8 @@ const MeetingsPage: React.FC = () => {
     const [refreshTrigger, setRefreshTrigger] = useState(0);
 
     const isFaculty = user?.type === "Faculty";
+    const isStudent = user?.type === "Student";
+    const [activeTab, setActiveTab] = useState<'meetings' | 'notifications'>(isStudent ? 'notifications' : 'meetings');
 
     // Handle hydration
     useEffect(() => {
@@ -35,14 +38,21 @@ const MeetingsPage: React.FC = () => {
 
     useEffect(() => {
         const loadMeetings = async (): Promise<void> => {
-            if (!isHydrated || !isFaculty || !user?.userId) {
+            if (!isHydrated || !user?.userId) {
                 setLoading(false);
                 return;
             }
 
             try {
-                console.log('[MeetingsPage] Loading meetings for mentor:', user.userId);
-                const data = await meetingsService.getMeetingsForMentor(user.userId);
+                console.log(`[MeetingsPage] Loading meetings for ${isFaculty ? 'mentor' : 'student'}:`, user.userId);
+
+                let data: Meeting[];
+                if (isFaculty) {
+                    data = await meetingsService.getMeetingsForMentor(user.userId);
+                } else {
+                    data = await meetingsService.getMeetingsForStudent(user.userId);
+                }
+
                 setMeetings(data);
                 console.log('[MeetingsPage] Meetings loaded successfully:', data.length);
             } catch (error) {
@@ -117,6 +127,11 @@ const MeetingsPage: React.FC = () => {
         }
     };
 
+    const handleNotificationUpdate = (): void => {
+        // Refresh meetings when a notification is responded to
+        setRefreshTrigger(prev => prev + 1);
+    };
+
     // Show loading skeleton during hydration to prevent mismatch
     if (!isHydrated) {
         return (
@@ -139,14 +154,14 @@ const MeetingsPage: React.FC = () => {
     }
 
     // Authorization check (only after hydration)
-    if (!isFaculty) {
+    if (!isFaculty && !isStudent) {
         return (
             <ErrorBoundary>
                 <div className="flex flex-col items-center justify-center min-h-screen">
                     <FiCalendar className="w-16 h-16 text-gray-400 mb-4" />
                     <h1 className="text-2xl font-bold mb-2">Unauthorized</h1>
                     <p className="text-lg text-gray-600 dark:text-gray-400">
-                        Only faculty members can access meetings.
+                        You need to be logged in to access meetings.
                     </p>
                 </div>
             </ErrorBoundary>
@@ -162,20 +177,57 @@ const MeetingsPage: React.FC = () => {
                             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                                 <div>
                                     <h1 className="text-3xl font-bold">
-                                        Meetings
+                                        {isFaculty ? "Meetings" : "My Meetings"}
                                     </h1>
                                     <p className="text-gray-500 dark:text-gray-400 text-base mt-1">
-                                        Manage your mentor meetings and schedules
+                                        {isFaculty
+                                            ? "Manage your mentor meetings and schedules"
+                                            : "View your scheduled meetings and invitations"
+                                        }
                                     </p>
                                 </div>
-                                <button
-                                    onClick={() => setShowCreateMeeting(true)}
-                                    className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5"
-                                >
-                                    <FiPlus className="w-5 h-5" />
-                                    Create Meeting
-                                </button>
+                                {isFaculty && (
+                                    <button
+                                        onClick={() => setShowCreateMeeting(true)}
+                                        className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5"
+                                    >
+                                        <FiPlus className="w-5 h-5" />
+                                        Create Meeting
+                                    </button>
+                                )}
                             </div>
+
+                            {/* Student Tabs */}
+                            {isStudent && (
+                                <div className="mt-6 border-b border-gray-200 dark:border-gray-700">
+                                    <nav className="flex space-x-8">
+                                        <button
+                                            onClick={() => setActiveTab('notifications')}
+                                            className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${activeTab === 'notifications'
+                                                ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                                                : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+                                                }`}
+                                        >
+                                            <span className="flex items-center gap-2">
+                                                <FiBell className="w-4 h-4" />
+                                                Meeting Invitations
+                                            </span>
+                                        </button>
+                                        <button
+                                            onClick={() => setActiveTab('meetings')}
+                                            className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${activeTab === 'meetings'
+                                                ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                                                : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+                                                }`}
+                                        >
+                                            <span className="flex items-center gap-2">
+                                                <FiCalendar className="w-4 h-4" />
+                                                My Meetings
+                                            </span>
+                                        </button>
+                                    </nav>
+                                </div>
+                            )}
                         </header>
 
                         {/* Loading State */}
@@ -189,62 +241,81 @@ const MeetingsPage: React.FC = () => {
 
                         {/* Content */}
                         {!loading && (
-                            <div className="flex flex-col lg:flex-row gap-6">
-                                {/* Meetings List */}
-                                <div className="flex-1 lg:max-w-md">
+                            <div>
+                                {/* Student Notifications Tab */}
+                                {isStudent && activeTab === 'notifications' && (
                                     <ErrorBoundary>
-                                        <MeetingsList
-                                            meetings={meetings}
-                                            selectedMeetingId={selectedMeeting?.id}
-                                            onMeetingSelect={setSelectedMeeting}
-                                            onMeetingDeleted={handleMeetingDeleted}
+                                        <MeetingNotifications
+                                            userId={user?.userId || ''}
+                                            onNotificationUpdate={handleNotificationUpdate}
                                         />
                                     </ErrorBoundary>
-                                </div>
+                                )}
 
-                                {/* Meeting Details */}
-                                <div className="flex-1">
-                                    <ErrorBoundary>
-                                        {selectedMeeting ? (
-                                            <MeetingDetails
-                                                meeting={selectedMeeting}
-                                                onMeetingUpdated={handleMeetingUpdated}
-                                                onMeetingDeleted={handleMeetingDeleted}
-                                            />
-                                        ) : (
-                                            <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200/50 dark:border-gray-800/50 p-8">
-                                                <div className="text-center">
-                                                    <FiCalendar className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-                                                    <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
-                                                        Select a Meeting
-                                                    </h3>
-                                                    <p className="text-gray-500 dark:text-gray-400">
-                                                        Choose a meeting from the list to view its details
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </ErrorBoundary>
-                                </div>
+                                {/* Meetings Tab (for both mentors and students) */}
+                                {(isFaculty || (isStudent && activeTab === 'meetings')) && (
+                                    <div className="flex flex-col lg:flex-row gap-6">
+                                        {/* Meetings List */}
+                                        <div className="flex-1 lg:max-w-md">
+                                            <ErrorBoundary>
+                                                <MeetingsList
+                                                    meetings={meetings}
+                                                    selectedMeetingId={selectedMeeting?.id}
+                                                    onMeetingSelect={setSelectedMeeting}
+                                                    onMeetingDeleted={handleMeetingDeleted}
+                                                    isStudent={isStudent}
+                                                />
+                                            </ErrorBoundary>
+                                        </div>
+
+                                        {/* Meeting Details */}
+                                        <div className="flex-1">
+                                            <ErrorBoundary>
+                                                {selectedMeeting ? (
+                                                    <MeetingDetails
+                                                        meeting={selectedMeeting}
+                                                        onMeetingUpdated={handleMeetingUpdated}
+                                                        onMeetingDeleted={handleMeetingDeleted}
+                                                    />
+                                                ) : (
+                                                    <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200/50 dark:border-gray-800/50 p-8">
+                                                        <div className="text-center">
+                                                            <FiCalendar className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+                                                            <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                                                                Select a Meeting
+                                                            </h3>
+                                                            <p className="text-gray-500 dark:text-gray-400">
+                                                                Choose a meeting from the list to view its details
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </ErrorBoundary>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         )}
 
                         {/* Create Meeting Modal */}
-                        <Modal
-                            isOpen={showCreateMeeting}
-                            onClose={() => setShowCreateMeeting(false)}
-                            title="Create New Meeting"
-                            size="lg"
-                        >
-                            <ErrorBoundary>
-                                <CreateMeeting
-                                    onCancel={() => setShowCreateMeeting(false)}
-                                    onMeetingCreated={handleMeetingCreated}
-                                    mentorId={user?.userId || ''}
-                                    mentorName={user?.name || ''}
-                                />
-                            </ErrorBoundary>
-                        </Modal>
+                        {isFaculty && (
+                            <Modal
+                                isOpen={showCreateMeeting}
+                                onClose={() => setShowCreateMeeting(false)}
+                                title="Create New Meeting"
+                                size="lg"
+                            >
+                                <ErrorBoundary>
+                                    <CreateMeeting
+                                        onCancel={() => setShowCreateMeeting(false)}
+                                        onMeetingCreated={handleMeetingCreated}
+                                        mentorId={user?.userId || ''}
+                                        mentorName={user?.name || ''}
+                                        isStudent={isStudent}
+                                    />
+                                </ErrorBoundary>
+                            </Modal>
+                        )}
                     </div>
                 </div>
             </ErrorBoundary>

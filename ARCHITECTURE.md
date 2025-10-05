@@ -17,7 +17,9 @@ src/
 │   ├── login/                    # Login functionality
 │   ├── profile/                  # Profile page (main page file only)
 │   ├── mentor-dashboard/         # Mentor dashboard
-│   └── mentee-dashboard/         # Mentee dashboard
+│   ├── my-mentor/               # Student landing page - mentor details
+│   ├── documents/               # Document management for students
+│   └── mentee-dashboard/         # Mentee dashboard (deprecated)
 ├── components/                   # Reusable UI components
 │   ├── ui/                      # Generic UI components
 │   │   ├── ErrorBoundary.tsx    # Error boundary wrapper

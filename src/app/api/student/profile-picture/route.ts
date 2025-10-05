@@ -27,8 +27,21 @@ export async function GET(request: NextRequest) {
         response.headers.set('Cache-Control', 'public, max-age=31536000'); // Cache for 1 year
 
         return response;
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error fetching profile picture:', error);
-        return NextResponse.json({ error: 'Failed to fetch image' }, { status: 404 });
+
+        // Handle specific file not found error
+        if (error.code === 404 || error.type === 'storage_file_not_found') {
+            return NextResponse.json({
+                error: 'Profile picture not found',
+                code: 'FILE_NOT_FOUND'
+            }, { status: 404 });
+        }
+
+        // Handle other errors
+        return NextResponse.json({
+            error: 'Failed to fetch profile picture',
+            code: 'FETCH_ERROR'
+        }, { status: 500 });
     }
 }

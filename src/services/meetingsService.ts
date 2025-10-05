@@ -410,6 +410,169 @@ class MeetingsService {
     }
 
     /**
+     * Fetch all meetings for a student/mentee
+     * @param studentId - The student's ID
+     * @returns Promise<Meeting[]>
+     */
+    async getMeetingsForStudent(studentId: string): Promise<Meeting[]> {
+        try {
+            if (!studentId) {
+                throw new Error('Student ID is required');
+            }
+
+            console.log('[MeetingsService] Fetching meetings for student:', studentId);
+
+            // Mock data for meetings where the student is invited
+            const mockMeetings: Meeting[] = [
+                {
+                    id: '1',
+                    title: 'Weekly Progress Review',
+                    description: 'Review your progress and discuss upcoming assignments',
+                    date: '2025-10-05',
+                    time: '10:00',
+                    duration: 60,
+                    meetingUrl: 'https://meet.google.com/abc-defg-hij',
+                    meetingPassword: 'mentor123',
+                    purpose: 'Progress Review',
+                    status: 'scheduled',
+                    mentorId: 'mentor1',
+                    mentorName: 'Dr. John Smith',
+                    invitedStudents: [
+                        {
+                            studentId: studentId,
+                            studentName: 'Current Student',
+                            studentEmail: 'student@pdeu.ac.in',
+                            rollNo: 'CS21001',
+                            responseStatus: 'accepted'
+                        }
+                    ],
+                    createdAt: '2025-10-01T10:00:00Z',
+                    updatedAt: '2025-10-01T15:30:00Z'
+                },
+                {
+                    id: '2',
+                    title: 'Project Discussion',
+                    description: 'Discuss your project requirements and timeline',
+                    date: '2025-10-08',
+                    time: '14:30',
+                    duration: 90,
+                    meetingUrl: 'https://zoom.us/j/123456789',
+                    purpose: 'Project Planning',
+                    status: 'scheduled',
+                    mentorId: 'mentor1',
+                    mentorName: 'Dr. John Smith',
+                    invitedStudents: [
+                        {
+                            studentId: studentId,
+                            studentName: 'Current Student',
+                            studentEmail: 'student@pdeu.ac.in',
+                            rollNo: 'CS21001',
+                            responseStatus: 'pending'
+                        }
+                    ],
+                    createdAt: '2025-10-01T09:00:00Z',
+                    updatedAt: '2025-10-01T09:00:00Z'
+                },
+                {
+                    id: '3',
+                    title: 'Mid-term Assessment',
+                    description: 'Performance evaluation and feedback session',
+                    date: '2025-09-28',
+                    time: '11:00',
+                    duration: 45,
+                    meetingUrl: 'https://teams.microsoft.com/meet/abc123',
+                    purpose: 'Assessment',
+                    status: 'completed',
+                    mentorId: 'mentor1',
+                    mentorName: 'Dr. John Smith',
+                    invitedStudents: [
+                        {
+                            studentId: studentId,
+                            studentName: 'Current Student',
+                            studentEmail: 'student@pdeu.ac.in',
+                            rollNo: 'CS21001',
+                            responseStatus: 'accepted',
+                            joinedAt: '2025-09-28T11:02:00Z'
+                        }
+                    ],
+                    createdAt: '2025-09-25T09:00:00Z',
+                    updatedAt: '2025-09-28T11:45:00Z'
+                },
+                {
+                    id: '4',
+                    title: 'Career Guidance Session',
+                    description: 'Discuss career opportunities and future plans',
+                    date: '2025-09-20',
+                    time: '15:00',
+                    duration: 60,
+                    meetingUrl: 'https://meet.google.com/xyz-abcd-efg',
+                    purpose: 'Career Guidance',
+                    status: 'completed',
+                    mentorId: 'mentor1',
+                    mentorName: 'Dr. John Smith',
+                    invitedStudents: [
+                        {
+                            studentId: studentId,
+                            studentName: 'Current Student',
+                            studentEmail: 'student@pdeu.ac.in',
+                            rollNo: 'CS21001',
+                            responseStatus: 'declined',
+                            declineReason: 'Had to attend urgent family matter'
+                        }
+                    ],
+                    createdAt: '2025-09-18T10:00:00Z',
+                    updatedAt: '2025-09-20T14:30:00Z'
+                },
+                {
+                    id: '5',
+                    title: 'Research Methodology Workshop',
+                    description: 'Learn about research methodologies for your project',
+                    date: '2025-09-15',
+                    time: '09:30',
+                    duration: 120,
+                    meetingUrl: 'https://zoom.us/j/987654321',
+                    purpose: 'Workshop',
+                    status: 'completed',
+                    mentorId: 'mentor1',
+                    mentorName: 'Dr. John Smith',
+                    invitedStudents: [
+                        {
+                            studentId: studentId,
+                            studentName: 'Current Student',
+                            studentEmail: 'student@pdeu.ac.in',
+                            rollNo: 'CS21001',
+                            responseStatus: 'declined',
+                            declineReason: 'Conflicted with another important exam'
+                        }
+                    ],
+                    createdAt: '2025-09-12T10:00:00Z',
+                    updatedAt: '2025-09-15T09:00:00Z'
+                }
+            ];
+
+            // Filter meetings where this student is invited
+            const studentMeetings = mockMeetings.filter(meeting =>
+                meeting.invitedStudents.some(student => student.studentId === studentId)
+            );
+
+            console.log('[MeetingsService] Found', studentMeetings.length, 'meetings for student:', studentId);
+            return studentMeetings;
+
+        } catch (error) {
+            const meetingError: MeetingsServiceError = {
+                name: 'MeetingsServiceError',
+                message: `Failed to fetch meetings for student: ${error instanceof Error ? error.message : 'Unknown error'}`,
+                service: 'MeetingsService',
+                action: 'getMeetingsForStudent',
+                originalError: error
+            };
+
+            console.error('[MeetingsService] getMeetingsForStudent Error:', meetingError);
+            throw meetingError;
+        }
+    }
+
+    /**
      * Format meeting date and time for display
      * @param date - Meeting date
      * @param time - Meeting time

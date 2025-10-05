@@ -136,7 +136,7 @@ export default function LoginPage() {
         if (res.user?.labels?.includes("Faculty")) {
           window.location.href = "/mentor-dashboard";
         } else if (res.user?.labels?.includes("Student")) {
-          window.location.href = "/mentee-dashboard";
+          window.location.href = "/my-mentor";
         } else {
           window.location.href = "/";
         }

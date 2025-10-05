@@ -355,14 +355,16 @@ const MeetingDetails: React.FC<MeetingDetailsProps> = ({
                             </h4>
                         </div>
 
-                        {/* Add Students Button */}
-                        <button
-                            onClick={() => setShowAddStudents(!showAddStudents)}
-                            className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
-                        >
-                            <FiPlus className="w-4 h-4" />
-                            Add Students
-                        </button>
+                        {/* Add Students Button - Removed as per user request */}
+                        {false && (
+                            <button
+                                onClick={() => setShowAddStudents(!showAddStudents)}
+                                className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
+                            >
+                                <FiPlus className="w-4 h-4" />
+                                Add Students
+                            </button>
+                        )}
                     </div>
 
                     {meeting.invitedStudents.length === 0 ? (
@@ -473,8 +475,8 @@ const MeetingDetails: React.FC<MeetingDetailsProps> = ({
                                                 <div
                                                     key={student.studentId}
                                                     className={`flex items-center justify-between p-3 rounded-lg cursor-pointer transition-colors ${isSelected
-                                                            ? 'bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800'
-                                                            : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'
+                                                        ? 'bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800'
+                                                        : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'
                                                         }`}
                                                     onClick={() => handleStudentToggle(student)}
                                                 >

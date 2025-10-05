@@ -40,7 +40,13 @@ const navLinks = [
     name: "Home",
     path: "/",
     icon: <Home className="mr-2" />,
-    roles: ["Admin", "SuperAdmin", "Faculty", "Student", "Developer"],
+    roles: ["Admin", "SuperAdmin", "Faculty", "Developer"],
+  },
+  {
+    name: "My Mentor",
+    path: "/my-mentor",
+    icon: <Users className="mr-2" />,
+    roles: ["Student"],
   },
   {
     name: "Student Directory",
@@ -55,16 +61,28 @@ const navLinks = [
     roles: ["Admin", "SuperAdmin", "Faculty", "Student", "Developer"],
   },
   {
+    name: "Documents",
+    path: "/documents",
+    icon: <FileText className="mr-2" />,
+    roles: ["Student"],
+  },
+  {
     name: "Analytics",
     path: "/analytics",
     icon: <FiBarChart2 className="mr-2" />,
-    roles: ["Admin", "SuperAdmin", "Faculty", "Student", "Developer"],
+    roles: ["Admin", "SuperAdmin", "Faculty", "Developer"],
+  },
+  {
+    name: "My Profile",
+    path: "/profile",
+    icon: <UserRoundCog className="mr-2" />,
+    roles: ["Student"],
   },
   {
     name: "Profile",
     path: "/profile",
     icon: <UserRoundCog className="mr-2" />,
-    roles: ["Faculty", "Student"],
+    roles: ["Faculty"],
   },
   {
     name: "Settings",
@@ -249,7 +267,7 @@ const Navbar: React.FC = () => {
     }
 
     // Special handling for home - only active if not in analytics mode
-    if (linkPath === "/" && (pathname === "/" || pathname === "/mentor-dashboard" || pathname === "/mentee-dashboard")) {
+    if (linkPath === "/" && (pathname === "/" || pathname === "/mentor-dashboard" || pathname === "/my-mentor")) {
       return !analyticsActive; // Home is not active when analytics is active
     }
 

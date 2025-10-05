@@ -14,7 +14,7 @@ export default function HomePage() {
         if (user?.labels?.includes("Faculty")) {
             router.replace("/mentor-dashboard");
         } else if (user?.labels?.includes("Student")) {
-            router.replace("/mentee-dashboard");
+            router.replace("/my-mentor");
         } else {
             // If user is not logged in, redirect to login page
             router.replace("/login");
