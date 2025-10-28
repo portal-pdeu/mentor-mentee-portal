@@ -307,7 +307,7 @@ export default function StudentDirectory() {
                                                                         src={getStudentImageUrl(student.imageId)}
                                                                         alt={`${student.name}'s profile picture`}
                                                                         className="object-cover w-full h-full rounded-full"
-                                                                        onLoad={() => console.log('Grid: Image loaded successfully for:', student.name)}
+                                                                        onLoad={() => console.log('Grid: Image loaded successfully for:', student.name, student.studentId)}
                                                                         onError={(e) => {
                                                                             console.log('Grid: Image failed to load for:', student.name);
                                                                             e.currentTarget.style.display = 'none';
