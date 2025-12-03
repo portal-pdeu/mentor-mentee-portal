@@ -70,6 +70,18 @@ export type ImportedStudentData = {
   Department: string;
 };
 
+// StudentDocument interface - minimal schema
+export interface StudentDocument {
+  $id?: string;
+  studentId: string;
+  uploadDate: string;
+  status: string;
+  mentorId: string;
+  name: string;
+  fileId: string;
+  fileUrl: string;
+}
+
 // ProjectRequest interface
 export interface ProjectRequest {
   id: string;
@@ -192,3 +204,24 @@ export type tokenInfo = {
   token: string;
   timeStamp: number;
 };
+
+// StudentDocument interface - minimal schema
+export interface StudentDocument {
+  $id?: string;
+  studentId: string;
+  uploadDate: string;
+  status: string;
+  mentorId: string;
+  name: string;
+  fileId: string;
+  fileUrl: string;
+}
+
+// Mentor-Mentee Assignment interface
+export interface MentorMenteeMapping {
+  id?: string; // Document ID from Appwrite
+  studentName: string;
+  assignedMentorName: string;
+  studentId: string;
+  mentorId: string;
+}

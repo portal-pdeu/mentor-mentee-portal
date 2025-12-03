@@ -5,6 +5,7 @@ import { useAppSelector } from "@/GlobalRedux/hooks";
 import { FiMail, FiPhone, FiMapPin, FiClock, FiCalendar, FiUser } from "react-icons/fi";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { getInitials } from "@/lib/imageUtils";
+import { getMentorForStudent } from "./actions";
 
 interface Mentor {
     mentorId: string;
@@ -27,29 +28,17 @@ export default function MyMentorPage() {
     const { user } = useAppSelector((state) => state.auth);
 
     useEffect(() => {
-        // TODO: Fetch mentor data based on current student
-        // For now, showing a placeholder
         const fetchMentor = async () => {
             setLoading(true);
             try {
-                // This would be an API call to get the student's assigned mentor
-                // const mentorData = await getMentorByStudentId(user.userId);
-
-                // Placeholder data for now
-                const placeholderMentor: Mentor = {
-                    mentorId: "faculty_123",
-                    name: "Dr. Test Faculty",
-                    email: "test.faculty@sot.pdpu.ac.in",
-                    department: "Computer Science",
-                    school: "SOT",
-                    phoneNumber: "+91 9876543210",
-                    officeLocation: "Room 301, CS Block",
-                    expertise: ["Machine Learning", "Data Science", "Web Development"],
-                    availableHours: ["Monday 10:00-12:00", "Wednesday 14:00-16:00", "Friday 10:00-12:00"],
-                    isHOD: false
-                };
-
-                setMentor(placeholderMentor);
+                if (user?.userId) {
+                    console.log('[MyMentor] Fetching mentor for user:', user.userId);
+                    const mentorData = await getMentorForStudent(user.userId);
+                    console.log('[MyMentor] Received mentor:', mentorData);
+                    setMentor(mentorData);
+                } else {
+                    console.log('[MyMentor] No user ID available');
+                }
             } catch (error) {
                 console.error("Error fetching mentor:", error);
             } finally {
@@ -90,7 +79,7 @@ export default function MyMentorPage() {
                     {/* Header */}
                     <div className="mb-8">
                         <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                            Welcome back, {user?.name?.split(' ')[0]}! 👋
+                            Welcome back, {user?.name?.split(' ')[0]}!
                         </h1>
                         <p className="text-gray-600 dark:text-gray-400">
                             Here's an overview of your academic journey and mentor interactions.
@@ -156,7 +145,7 @@ export default function MyMentorPage() {
                 {/* Header */}
                 <div className="mb-8">
                     <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                        Welcome back, {user?.name?.split(' ')[0]}! 👋
+                        Welcome back, {user?.name?.split(' ')[0]}!
                     </h1>
                     <p className="text-gray-600 dark:text-gray-400">
                         Here's an overview of your academic journey and mentor interactions.

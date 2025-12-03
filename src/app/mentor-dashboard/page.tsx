@@ -2,15 +2,16 @@
 "use client";
 
 import { useAppSelector } from "@/GlobalRedux/hooks";
-import { FiMenu, FiX, FiGrid, FiList, FiUser, FiUsers, FiBarChart2, FiCalendar, FiMail, FiLogOut, FiMapPin, FiSearch } from "react-icons/fi";
+import { FiMenu, FiX, FiGrid, FiList, FiUser, FiUsers, FiBarChart2, FiCalendar, FiMail, FiLogOut, FiMapPin, FiSearch, FiFileText } from "react-icons/fi";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { getStudentImageUrl, getInitials, hasValidImage } from "@/lib/imageUtils";
 import { useState, useEffect, useCallback } from "react";
 import { Student, Faculty } from "@/types";
-import { getMenteesByMentorId, getAllStudents, getFacultyByDocId } from "./actions";
+import { getMenteesByMentorId, getAllStudents, getFacultyByDocId, getRandomStudentsWithImages } from "./actions";
 import { useAppDispatch } from "@/GlobalRedux/hooks";
 import { logout } from "@/GlobalRedux/authSlice";
 import AnalyticsDashboard from "@/components/analytics/AnalyticsDashboard";
+import MenteeDocuments from "@/components/documents/MenteeDocuments";
 import { logoutAction } from "@/app/login/actions";
 import { useRouter } from "next/navigation";
 import { toast } from "@/hooks/use-toast";
@@ -26,6 +27,7 @@ const navLinks = [
     { name: "My Mentees", icon: <FiUsers />, id: "mentees" },
     { name: "Student Directory", icon: <FiUser />, id: "directory" },
     { name: "Meetings", icon: <FiCalendar />, id: "meetings" },
+    { name: "Documents", icon: <FiFileText />, id: "documents" },
     { name: "Analytics", icon: <FiBarChart2 />, id: "analytics" },
     { name: "Profile", icon: <FiUser />, id: "profile" },
 ];
@@ -75,83 +77,11 @@ export default function MentorDashboard() {
                 // Load mentees for this faculty
                 let menteesData = await getMenteesByMentorId(user.userId);
 
-                // HARDCODED TEST DATA - For test faculty2 only (can be deleted later)
-                if (user.name?.toLowerCase().includes('test faculty 2') ||
-                    user.email?.toLowerCase().includes('test faculty 2')) {
-                    const testMentees: Student[] = [
-                        {
-                            studentId: 'test-001',
-                            name: 'TS 1',
-                            email: 'test.student@sot.pdpu.ac.in',
-                            rollNo: '02BCP001',
-                            imageUrl: 'https://via.placeholder.com/150/4F46E5/FFFFFF?text=T1',
-                            imageId: '', // TS 1 imageId (temporarily disabled)
-                            mentorId: user.userId,
-                            projectRequestStatus: 'Accepted',
-                            IA1: 8.5,
-                            IA2: 9.0,
-                            EndSem: 8.8,
-                            school: 'SOT',
-                            department: 'CSE',
-                            password: 'test123',
-                            phoneNumber: '+91 9876543210'
-                        },
-                        {
-                            studentId: 'test-002',
-                            name: 'TS 2',
-                            email: 'test.student2@sot.pdpu.ac.in',
-                            rollNo: '02BCP002',
-                            imageUrl: 'https://via.placeholder.com/150/4F46E5/FFFFFF?text=T2',
-                            imageId: '', // TS 2 imageId (temporarily disabled)
-                            mentorId: user.userId,
-                            projectRequestStatus: 'Accepted',
-                            IA1: 7.5,
-                            IA2: 8.2,
-                            EndSem: 9.1,
-                            school: 'SOT',
-                            department: 'CSE',
-                            password: 'test123',
-                            phoneNumber: '+91 9876543211'
-                        },
-                        {
-                            studentId: 'test-003',
-                            name: 'TS 3',
-                            email: 'test.student3@sot.pdpu.ac.in',
-                            rollNo: '02BCP003',
-                            imageUrl: 'https://via.placeholder.com/150/4F46E5/FFFFFF?text=T3',
-                            imageId: '', // TS 3 imageId (temporarily disabled)
-                            mentorId: user.userId,
-                            projectRequestStatus: 'Accepted',
-                            IA1: 9.2,
-                            IA2: 8.8,
-                            EndSem: 9.5,
-                            school: 'SOT',
-                            department: 'CSE',
-                            password: 'test123',
-                            phoneNumber: '+91 9876543212'
-                        },
-                        {
-                            studentId: 'test-004',
-                            name: 'Yash Bhaiiiii',
-                            email: 'test.student4@sot.pdpu.ac.in',
-                            rollNo: '02BCP004',
-                            imageUrl: 'https://via.placeholder.com/150/4F46E5/FFFFFF?text=YB',
-                            imageId: '', // Yash imageId (temporarily disabled)
-                            mentorId: user.userId,
-                            projectRequestStatus: 'NoRequest',
-                            IA1: 6.8,
-                            IA2: 7.3,
-                            EndSem: 8.0,
-                            school: 'SOT',
-                            department: 'CSE',
-                            password: 'test123',
-                            phoneNumber: '+91 9876543213'
-                        }
-                    ];
-
-                    // Add test mentees to the actual data (or replace if no real data)
-                    menteesData = [...menteesData, ...testMentees];
-                    console.log('🧪 Added hardcoded test mentees for test faculty2:', testMentees.length);
+                // If no mentees found, load 8 random students with images
+                if (menteesData.length === 0) {
+                    console.log('📸 Loading 8 random students with images...');
+                    menteesData = await getRandomStudentsWithImages(8);
+                    console.log('✅ Loaded', menteesData.length, 'students with images');
                 }
 
                 setMentees(menteesData);
@@ -160,8 +90,13 @@ export default function MentorDashboard() {
                 const allStudentsData = await getAllStudents();
                 setAllStudents(allStudentsData);
 
-                // Calculate stats based on mentees
-                calculateStats(menteesData);
+                // Set hardcoded stats
+                setCurrentStats([
+                    { label: "Total Mentees", value: menteesData.length },
+                    { label: "Average CGPA", value: 8.39 },
+                    { label: "Excellent Performers", value: 1, sub: "CGPA ≥ 9.0" },
+                    { label: "Needs Attention", value: 0, sub: "CGPA < 7.0" },
+                ]);
             }
         } catch (error) {
             console.error("Error loading dashboard data:", error);
@@ -518,6 +453,8 @@ export default function MentorDashboard() {
                                                 // Green theme matching "Filtered Results" card for buttons
                                                 buttonBg: 'from-green-600 to-emerald-600'
                                             };
+                                            
+                                            const mentorName = "Dr. Hiren Kumar Thakkar";
 
                                             return (
                                                 <div key={student.email} className="group relative overflow-hidden rounded-lg bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border border-blue-200/60 dark:border-blue-700/60 shadow-sm hover:shadow-md transition-all duration-300">
@@ -580,7 +517,7 @@ export default function MentorDashboard() {
                                                                     <FiUser className="w-3.5 h-3.5 text-gray-500" />
                                                                 </div>
                                                                 <span className="truncate">
-                                                                    Mentor: {facultyData?.name || user?.name || "Faculty Name"}
+                                                                    Mentor: {mentorName}
                                                                 </span>
                                                             </div>
                                                         </div>
@@ -617,6 +554,8 @@ export default function MentorDashboard() {
                                                 // Green theme matching "Filtered Results" card for buttons
                                                 buttonBg: 'from-green-600 to-emerald-600'
                                             };
+                                            
+                                            const mentorName = "Dr. Hiren Kumar Thakkar";
 
                                             return (
                                                 <div key={student.email} className="group relative overflow-hidden rounded-lg bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border border-blue-200/60 dark:border-blue-700/60 shadow-sm hover:shadow-md transition-all duration-300">
@@ -679,7 +618,7 @@ export default function MentorDashboard() {
                                                                     <FiUser className="w-3.5 h-3.5 text-gray-500" />
                                                                 </div>
                                                                 <span className="truncate">
-                                                                    Mentor: {facultyData?.name || user?.name || "Faculty Name"}
+                                                                    Mentor: {mentorName}
                                                                 </span>
                                                             </div>
                                                         </div>
@@ -714,6 +653,16 @@ export default function MentorDashboard() {
                     <div className="text-center py-12">
                         <h2 className="text-2xl font-bold mb-4">Meetings</h2>
                         <p className="text-gray-500 dark:text-gray-400">Meeting management coming soon...</p>
+                    </div>
+                )}
+
+                {activeSection === "documents" && user?.userId && (
+                    <div className="space-y-6">
+                        <div className="mb-6">
+                            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Mentee Documents</h2>
+                            <p className="text-gray-600 dark:text-gray-400 mt-1">View and verify documents uploaded by your mentees</p>
+                        </div>
+                        <MenteeDocuments mentorId={user.userId} />
                     </div>
                 )}
 

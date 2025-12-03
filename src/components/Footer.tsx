@@ -14,12 +14,12 @@ const Footer = () => {
               <span className="text-muted-foreground">Developed by</span>
               <div className="flex flex-col sm:flex-row items-center gap-2">
                 <Link
-                  href="https://www.linkedin.com/in/mrugeshthesiya/"
+                  href="https://www.linkedin.com/in/yash-lokwani/"
                   target="_blank"
                   className="group relative px-3 py-1 rounded-lg bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30 border border-indigo-200/50 dark:border-indigo-800/30 hover:border-indigo-300 dark:hover:border-indigo-700 transition-all duration-300 hover:shadow-md hover:shadow-indigo-100/50 dark:hover:shadow-indigo-900/30"
                 >
                   <span className="font-semibold bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 bg-clip-text text-transparent group-hover:from-indigo-700 group-hover:to-purple-700 dark:group-hover:from-indigo-300 dark:group-hover:to-purple-300 transition-all duration-300">
-                    Mrugesh Thesiya
+                    Yash Lokwani
                   </span>
                 </Link>
 
@@ -29,12 +29,12 @@ const Footer = () => {
                 <span className="sm:hidden text-muted-foreground">&</span>
 
                 <Link
-                  href="https://www.linkedin.com/in/hiren-kumar-thakkar/"
+                  href="https://www.linkedin.com/in/shafin-kazi/"
                   target="_blank"
                   className="group relative px-3 py-1 rounded-lg bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30 border border-purple-200/50 dark:border-purple-800/30 hover:border-purple-300 dark:hover:border-purple-700 transition-all duration-300 hover:shadow-md hover:shadow-purple-100/50 dark:hover:shadow-purple-900/30"
                 >
                   <span className="font-semibold bg-gradient-to-r from-purple-600 to-pink-600 dark:from-purple-400 dark:to-pink-400 bg-clip-text text-transparent group-hover:from-purple-700 group-hover:to-pink-700 dark:group-hover:from-purple-300 dark:group-hover:to-pink-300 transition-all duration-300">
-                    Hiren Kumar Thakkar
+                    Shafin Kazi
                   </span>
                 </Link>
               </div>

@@ -155,42 +155,120 @@ export async function loginAction(formData: {
         return { success: false, error: "User not found in the system" };
       }
 
-
+      // For LDAP users, try to decrypt the stored password first
+      // If decryption fails, use the LDAP-validated password as fallback
       try {
         userPassword = CryptoJS.AES.decrypt(
           user.password,
           String(process.env.NEXT_PUBLIC_SECRET_KEY)
         ).toString(CryptoJS.enc.Utf8);
-      } catch (decryptError) {
-        return { success: false, error: "Password decryption failed" };
+
+        // If decryption resulted in empty string, use the original password
+        if (!userPassword || userPassword.trim() === '') {
+          console.log('Database password decryption returned empty, using LDAP password');
+          userPassword = password;
+        }
+      } catch (decryptError: any) {
+        console.log('Database password decryption failed, using LDAP password:', decryptError.message);
+        // Use the password that was validated by LDAP
+        userPassword = password;
       }
     }
     console.log("User Password:", userPassword);
 
-    const { account } = await createAdminClient();
-    const session = await account.createEmailPasswordSession(
-      userEmail,
-      userPassword
-    );
-    console.log("Session created:", session);
+    let user: any;
+    let session: any;
 
-    const isProduction = String(process.env.NODE_ENV) === "production";
-    const cookieStore = await cookies();
-    cookieStore.set("session", session.secret, {
-      httpOnly: true,
-      sameSite: "strict",
-      secure: isProduction,
-      expires: new Date(session.expire),
-      path: "/",
-    });
+    // For admin emails, use normal Appwrite session
+    if (isAdminEmail) {
+      const { account } = await createAdminClient();
+      session = await account.createEmailPasswordSession(
+        userEmail,
+        userPassword
+      );
+      console.log("Session created:", session);
 
-    // Use the session secret to create a user session client
-    const { account: userAccount } = await createSessionClient(session.secret);
+      const isProduction = String(process.env.NODE_ENV) === "production";
+      const cookieStore = await cookies();
+      cookieStore.set("session", session.secret, {
+        httpOnly: true,
+        sameSite: "strict",
+        secure: isProduction,
+        expires: new Date(session.expire),
+        path: "/",
+      });
 
+      // Use the session secret to create a user session client
+      const { account: userAccount } = await createSessionClient(session.secret);
 
-    // Get user info from account using the user session
-    const user = await userAccount.get();
-    console.log("User info retrieved:", user);
+      // Get user info from account using the user session
+      user = await userAccount.get();
+      console.log("User info retrieved:", user);
+    } else {
+      // For LDAP users, create a custom session without Appwrite
+      console.log("Creating custom session for LDAP user");
+
+      // First check if user exists by trying to get their password
+      let passwordData = await facultyServerServices.getFacultyPasswordByEmailId(userEmail);
+      let userType = "Faculty";
+      let fullUserData = null;
+
+      if (passwordData) {
+        // Get all faculties and find by email
+        const allFaculties = await facultyServerServices.getAllfaculties();
+        fullUserData = allFaculties.find((f: any) => f.email === userEmail);
+      } else {
+        // Check students
+        passwordData = await studentServerServices.getStudentPasswordByEmailId(userEmail);
+        userType = "Student";
+
+        if (passwordData) {
+          // Get all students and find by email
+          const allStudents = await studentServerServices.getAllStudents();
+          fullUserData = allStudents.find((s: any) => s.email === userEmail);
+        }
+      }
+
+      if (!passwordData || !fullUserData) {
+        return { success: false, error: "User not found in the system" };
+      }
+
+      // Create a mock user object similar to Appwrite's format
+      const userId = userType === "Faculty"
+        ? (fullUserData as any).facultyId
+        : (fullUserData as any).studentId;
+
+      user = {
+        $id: userId,
+        name: fullUserData.name,
+        email: userEmail,
+        labels: [userType],
+        emailVerification: false
+      };
+
+      // Create a custom session token
+      const customSessionData = {
+        userId: user.$id,
+        email: userEmail,
+        type: userType,
+        created: new Date().toISOString(),
+        expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 hours
+      };
+
+      const sessionToken = Buffer.from(JSON.stringify(customSessionData)).toString('base64');
+
+      const isProduction = String(process.env.NODE_ENV) === "production";
+      const cookieStore = await cookies();
+      cookieStore.set("session", sessionToken, {
+        httpOnly: true,
+        sameSite: "strict",
+        secure: isProduction,
+        expires: new Date(customSessionData.expires),
+        path: "/",
+      });
+
+      console.log("Custom session created for LDAP user");
+    }
     let facultyData = null;
     let studentData = null;
 
@@ -216,9 +294,14 @@ export async function loginAction(formData: {
         studentData: null,
       };
     } else if (userType === "Faculty") {
+      // Override name for test.faculty2
+      const displayName = user.email === "test.faculty2@sot.pdpu.ac.in" 
+        ? "Dr. Hiren Kumar Thakkar" 
+        : user.name;
+      
       userData = {
         userId: user.$id,
-        name: user.name,
+        name: displayName,
         email: user.email,
         type: userType,
         labels: user.labels || [],
@@ -227,9 +310,14 @@ export async function loginAction(formData: {
         studentData: null,
       };
     } else if (userType === "Student") {
+      // Override name for yash.lce22
+      const displayName = user.email === "yash.lce22@sot.pdpu.ac.in" 
+        ? "Yash" 
+        : user.name;
+      
       userData = {
         userId: user.$id,
-        name: user.name,
+        name: displayName,
         email: user.email,
         type: userType,
         labels: user.labels || [],

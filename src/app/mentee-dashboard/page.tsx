@@ -7,11 +7,28 @@ import { FiUser, FiCalendar, FiBookOpen, FiTrendingUp, FiMail, FiPhone, FiAward,
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { getStudentImageUrl, getInitials, hasValidImage } from "@/lib/imageUtils";
 import { Student } from "@/types";
+import { getMentorForStudent } from "@/app/my-mentor/actions";
+
+interface Mentor {
+    mentorId: string;
+    name: string;
+    email: string;
+    department: string;
+    school: string;
+    phoneNumber?: string;
+    officeLocation?: string;
+    imageUrl?: string;
+    imageId?: string;
+    availableHours?: string[];
+    expertise?: string[];
+    isHOD?: boolean;
+}
 
 export default function MenteeDashboard() {
     const user = useAppSelector((state) => state.auth.user);
     const [isClient, setIsClient] = useState(false);
     const [studentData, setStudentData] = useState<Student | null>(null);
+    const [mentor, setMentor] = useState<Mentor | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -46,6 +63,13 @@ export default function MenteeDashboard() {
             };
 
             setStudentData(mockStudentData);
+
+            // Fetch mentor information
+            if (user?.userId) {
+                const mentorData = await getMentorForStudent(user.userId);
+                console.log('[MenteeDashboard] Fetched mentor:', mentorData);
+                setMentor(mentorData);
+            }
         } catch (error) {
             console.error("Error fetching student data:", error);
         } finally {
@@ -119,7 +143,7 @@ export default function MenteeDashboard() {
                             <div>
                                 <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Mentor Status</p>
                                 <p className="text-2xl font-bold text-green-600 dark:text-green-400">
-                                    {studentData?.mentorId ? "Assigned" : "Pending"}
+                                    {mentor ? "Assigned" : "Pending"}
                                 </p>
                             </div>
                             <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
@@ -208,19 +232,19 @@ export default function MenteeDashboard() {
                                 My Mentor
                             </h2>
 
-                            {studentData?.mentorId ? (
+                            {mentor ? (
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center space-x-4">
                                         <Avatar className="h-12 w-12 rounded-full">
                                             <AvatarFallback className="rounded-full text-white font-semibold bg-gradient-to-br from-green-500 to-emerald-600">
-                                                TF
+                                                {getInitials(mentor.name)}
                                             </AvatarFallback>
                                         </Avatar>
                                         <div>
                                             <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                                                Dr. Test Faculty
+                                                {mentor.name}
                                             </h3>
-                                            <p className="text-gray-600 dark:text-gray-400">Computer Science Department</p>
+                                            <p className="text-gray-600 dark:text-gray-400">{mentor.department}, {mentor.school}</p>
                                         </div>
                                     </div>
                                     <div className="flex space-x-2">

@@ -210,12 +210,8 @@ class FacultyServerServices {
         );
         return null;
       }
-      const cookieStore = await cookies();
-      const sessionCookie = cookieStore.get("session");
-      if (!sessionCookie?.value) {
-        return;
-      }
-      const { databases } = await createSessionClient(sessionCookie.value);
+
+      const { databases } = await createAdminClient();
 
       const response = await databases.listDocuments(
         String(process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID),

@@ -6,11 +6,15 @@ import { FiX, FiUpload, FiFile, FiBookOpen, FiAward } from 'react-icons/fi';
 interface DocumentUploadModalProps {
     isOpen: boolean;
     onClose: () => void;
-    uploadType: 'marksheet' | 'achievement';
+    uploadType: 'marksheet' | 'achievement' | 'additional';
     onUpload: (file: File, metadata: {
         semester?: string;
         year?: string;
         description?: string;
+        documentName?: string;
+        // marksheet specific
+        studentName?: string;
+        subjects?: Array<{ subject: string; marks: string | number }>
     }) => void;
 }
 
@@ -25,7 +29,10 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
     const [metadata, setMetadata] = useState({
         semester: '',
         year: '',
-        description: ''
+        description: '',
+        documentName: '',
+        studentName: '',
+        subjects: [{ subject: '', marks: '' }]
     });
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -86,8 +93,26 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
             return;
         }
 
+        // For marksheet require student name and at least one subject with marks
+        if (uploadType === 'marksheet') {
+            if (!metadata.studentName || metadata.studentName.trim() === '') {
+                alert('Please enter the student name for the marksheet.');
+                return;
+            }
+            const validSubjects = (metadata.subjects || []).filter(s => s.subject && String(s.marks).trim() !== '');
+            if (validSubjects.length === 0) {
+                alert('Please add at least one subject with marks.');
+                return;
+            }
+        }
+
         if (uploadType === 'achievement' && !metadata.description) {
             alert('Please provide a description for the achievement.');
+            return;
+        }
+
+        if (uploadType === 'additional' && (!metadata.documentName || !metadata.description)) {
+            alert('Please provide a document name and a brief description for the additional document.');
             return;
         }
 
@@ -97,7 +122,7 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
 
     const handleClose = () => {
         setSelectedFile(null);
-        setMetadata({ semester: '', year: '', description: '' });
+        setMetadata({ semester: '', year: '', description: '', documentName: '', studentName: '', subjects: [{ subject: '', marks: '' }] });
         setDragActive(false);
         onClose();
     };
@@ -120,25 +145,31 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
                     <div className="flex items-center gap-3">
                         <div className={`p-2 rounded-lg ${uploadType === 'marksheet'
                             ? 'bg-blue-100 dark:bg-blue-900/30'
-                            : 'bg-purple-100 dark:bg-purple-900/30'
+                            : uploadType === 'achievement'
+                                ? 'bg-purple-100 dark:bg-purple-900/30'
+                                : 'bg-gray-100 dark:bg-gray-900/30'
                             }`}>
                             {uploadType === 'marksheet' ? (
                                 <FiBookOpen className={`w-5 h-5 ${uploadType === 'marksheet'
                                     ? 'text-blue-600 dark:text-blue-400'
-                                    : 'text-purple-600 dark:text-purple-400'
+                                    : 'text-gray-600 dark:text-gray-400'
                                     }`} />
-                            ) : (
+                            ) : uploadType === 'achievement' ? (
                                 <FiAward className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                            ) : (
+                                <FiFile className="w-5 h-5 text-gray-600 dark:text-gray-300" />
                             )}
                         </div>
                         <div>
                             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                                Upload {uploadType === 'marksheet' ? 'Marksheet' : 'Achievement'}
+                                {uploadType === 'marksheet' ? 'Upload Marksheet' : uploadType === 'achievement' ? 'Upload Achievement' : 'Upload Additional Document'}
                             </h2>
                             <p className="text-sm text-gray-600 dark:text-gray-400">
                                 {uploadType === 'marksheet'
                                     ? 'Upload your semester marksheet'
-                                    : 'Upload your achievement certificate'
+                                    : uploadType === 'achievement'
+                                        ? 'Upload your achievement certificate'
+                                        : 'Provide a document name, a brief description and upload the file.'
                                 }
                             </p>
                         </div>
@@ -160,8 +191,8 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
                         </label>
                         <div
                             className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors cursor-pointer ${dragActive
-                                ? `border-${uploadType === 'marksheet' ? 'blue' : 'purple'}-400 bg-${uploadType === 'marksheet' ? 'blue' : 'purple'}-50 dark:bg-${uploadType === 'marksheet' ? 'blue' : 'purple'}-950/30`
-                                : `border-${uploadType === 'marksheet' ? 'blue' : 'purple'}-300 dark:border-${uploadType === 'marksheet' ? 'blue' : 'purple'}-700 hover:border-${uploadType === 'marksheet' ? 'blue' : 'purple'}-400 dark:hover:border-${uploadType === 'marksheet' ? 'blue' : 'purple'}-600`
+                                ? `border-${uploadType === 'marksheet' ? 'blue' : uploadType === 'achievement' ? 'purple' : 'gray'}-400 bg-${uploadType === 'marksheet' ? 'blue' : uploadType === 'achievement' ? 'purple' : 'gray'}-50 dark:bg-${uploadType === 'marksheet' ? 'blue' : uploadType === 'achievement' ? 'purple' : 'gray'}-950/30`
+                                : `border-${uploadType === 'marksheet' ? 'blue' : uploadType === 'achievement' ? 'purple' : 'gray'}-300 dark:border-${uploadType === 'marksheet' ? 'blue' : uploadType === 'achievement' ? 'purple' : 'gray'}-700 hover:border-${uploadType === 'marksheet' ? 'blue' : uploadType === 'achievement' ? 'purple' : 'gray'}-400 dark:hover:border-${uploadType === 'marksheet' ? 'blue' : uploadType === 'achievement' ? 'purple' : 'gray'}-600`
                                 }`}
                             onDragEnter={handleDrag}
                             onDragLeave={handleDrag}
@@ -179,7 +210,7 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
 
                             {selectedFile ? (
                                 <div className="flex items-center justify-center gap-3">
-                                    <FiFile className={`w-8 h-8 text-${uploadType === 'marksheet' ? 'blue' : 'purple'}-500`} />
+                                    <FiFile className={`w-8 h-8 text-${uploadType === 'marksheet' ? 'blue' : uploadType === 'achievement' ? 'purple' : 'gray'}-500`} />
                                     <div className="text-left">
                                         <p className="font-medium text-gray-900 dark:text-white">{selectedFile.name}</p>
                                         <p className="text-sm text-gray-600 dark:text-gray-400">{formatFileSize(selectedFile.size)}</p>
@@ -187,7 +218,7 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
                                 </div>
                             ) : (
                                 <>
-                                    <FiUpload className={`w-8 h-8 text-${uploadType === 'marksheet' ? 'blue' : 'purple'}-500 mx-auto mb-2`} />
+                                    <FiUpload className={`w-8 h-8 text-${uploadType === 'marksheet' ? 'blue' : uploadType === 'achievement' ? 'purple' : 'gray'}-500 mx-auto mb-2`} />
                                     <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
                                         Click to upload or drag and drop
                                     </p>
@@ -204,35 +235,97 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
 
                     {/* Metadata Fields */}
                     {uploadType === 'marksheet' ? (
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Semester *
-                                </label>
-                                <select
-                                    value={metadata.semester}
-                                    onChange={(e) => setMetadata({ ...metadata, semester: e.target.value })}
-                                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-gray-100"
-                                    required
-                                >
-                                    <option value="">Select Semester</option>
-                                    {[1, 2, 3, 4, 5, 6, 7, 8].map(sem => (
-                                        <option key={sem} value={`${sem}th`}>{sem}{sem === 1 ? 'st' : sem === 2 ? 'nd' : sem === 3 ? 'rd' : 'th'} Semester</option>
-                                    ))}
-                                </select>
+                        <div className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        Semester *
+                                    </label>
+                                    <select
+                                        value={metadata.semester}
+                                        onChange={(e) => setMetadata({ ...metadata, semester: e.target.value })}
+                                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-gray-100"
+                                    >
+                                        <option value="">Select Semester</option>
+                                        {[1, 2, 3, 4, 5, 6, 7, 8].map(sem => (
+                                            <option key={sem} value={`${sem}th`}>{sem}{sem === 1 ? 'st' : sem === 2 ? 'nd' : sem === 3 ? 'rd' : 'th'} Semester</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        Academic Year *
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={metadata.year}
+                                        onChange={(e) => setMetadata({ ...metadata, year: e.target.value })}
+                                        placeholder="e.g., 2023-24"
+                                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-gray-100"
+                                    />
+                                </div>
                             </div>
+
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Academic Year *
-                                </label>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Student Name *</label>
                                 <input
                                     type="text"
-                                    value={metadata.year}
-                                    onChange={(e) => setMetadata({ ...metadata, year: e.target.value })}
-                                    placeholder="e.g., 2023-24"
+                                    value={metadata.studentName}
+                                    onChange={(e) => setMetadata({ ...metadata, studentName: e.target.value })}
+                                    placeholder="Enter student name as on marksheet"
                                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-gray-100"
-                                    required
                                 />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Subjects & Marks *</label>
+                                <div className="space-y-2">
+                                    {(metadata.subjects || []).map((s, idx) => (
+                                        <div key={idx} className="flex gap-2">
+                                            <input
+                                                type="text"
+                                                value={s.subject}
+                                                onChange={(e) => {
+                                                    const copy = [...(metadata.subjects || [])];
+                                                    copy[idx] = { ...copy[idx], subject: e.target.value };
+                                                    setMetadata({ ...metadata, subjects: copy });
+                                                }}
+                                                placeholder="Subject name"
+                                                className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg"
+                                            />
+                                            <input
+                                                type="number"
+                                                value={String(s.marks)}
+                                                onChange={(e) => {
+                                                    const copy = [...(metadata.subjects || [])];
+                                                    copy[idx] = { ...copy[idx], marks: e.target.value };
+                                                    setMetadata({ ...metadata, subjects: copy });
+                                                }}
+                                                placeholder="Marks"
+                                                className="w-28 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    const copy = [...(metadata.subjects || [])];
+                                                    copy.splice(idx, 1);
+                                                    setMetadata({ ...metadata, subjects: copy.length ? copy : [{ subject: '', marks: '' }] });
+                                                }}
+                                                className="px-2 py-1 bg-red-100 text-red-600 rounded-md"
+                                            >
+                                                Remove
+                                            </button>
+                                        </div>
+                                    ))}
+
+                                    <button
+                                        type="button"
+                                        onClick={() => setMetadata({ ...metadata, subjects: [...(metadata.subjects || []), { subject: '', marks: '' }] })}
+                                        className="mt-2 px-3 py-2 bg-blue-50 text-blue-600 rounded-md"
+                                    >
+                                        + Add Subject
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     ) : (

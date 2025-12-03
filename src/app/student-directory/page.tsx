@@ -4,24 +4,35 @@ import { useAppSelector } from "@/GlobalRedux/hooks";
 import { FiMenu, FiX, FiGrid, FiList, FiUser, FiSearch, FiMail } from "react-icons/fi";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useState, useEffect } from "react";
-import { Student } from "@/types";
-import { getAllStudents } from "./actions";
-import { getStudentImageUrl, getInitials, hasValidImage } from "@/lib/imageUtils";
+import { Student, Faculty } from "@/types";
+import { getAllStudents, getAllFaculties, getStudentFacultyMapping } from "./actions";
+import { getStudentImageUrl, getFacultyImageUrl, getInitials, hasValidImage, hasValidFacultyImage } from "@/lib/imageUtils";
 import StudentProfileModal from "@/components/ui/StudentProfileModal";
+import MenteesModal from '@/components/ui/MenteesModal';
+import FacultyDetailModal from '@/components/ui/FacultyDetailModal';
 import "./styles.css";
 
 export default function StudentDirectory() {
     const user = useAppSelector((state) => state.auth.user);
     const [menuOpen, setMenuOpen] = useState(false);
     const [view, setView] = useState<'grid' | 'list'>('grid');
+    const [mode, setMode] = useState<'students' | 'faculties'>('students');
     const [isClient, setIsClient] = useState(false);
     const [allStudents, setAllStudents] = useState<Student[]>([]);
     const [filteredStudents, setFilteredStudents] = useState<Student[]>([]);
+    const [allFaculties, setAllFaculties] = useState<Faculty[]>([]);
+    const [filteredFaculties, setFilteredFaculties] = useState<Faculty[]>([]);
+    const [facultyMap, setFacultyMap] = useState<Map<string, Faculty>>(new Map());
+    const [studentToFacultyMap, setStudentToFacultyMap] = useState<Map<string, string>>(new Map());
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
     const [sortBy, setSortBy] = useState("name");
     const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedFaculty, setSelectedFaculty] = useState<Faculty | null>(null);
+    const [selectedFacultyId, setSelectedFacultyId] = useState<string | null>(null);
+    const [isMenteesModalOpen, setIsMenteesModalOpen] = useState(false);
+    const [isFacultyDetailModalOpen, setIsFacultyDetailModalOpen] = useState(false);
 
     useEffect(() => {
         setIsClient(true);
@@ -29,9 +40,25 @@ export default function StudentDirectory() {
 
     useEffect(() => {
         if (isClient) {
-            loadAllStudents();
+            if (mode === 'students') loadAllStudents();
+            else loadAllFaculties();
         }
     }, [isClient]);
+
+    useEffect(() => {
+        // Load data when mode switches
+        if (!isClient) return;
+        if (mode === 'students') {
+            if (allStudents.length === 0) loadAllStudents();
+        } else {
+            if (allFaculties.length === 0) loadAllFaculties();
+        }
+    }, [mode, isClient]);
+
+    useEffect(() => {
+        if (mode === 'students') filterAndSortStudents();
+        else filterAndSortFaculties();
+    }, [allStudents, allFaculties, searchTerm, sortBy, mode]);
 
     useEffect(() => {
         filterAndSortStudents();
@@ -40,17 +67,56 @@ export default function StudentDirectory() {
     const loadAllStudents = async () => {
         setLoading(true);
         try {
-            const studentsData = await getAllStudents();
+            // Fetch students, faculties and mapping in parallel
+            const [studentsData, facultiesData, mappingData] = await Promise.all([
+                getAllStudents(),
+                getAllFaculties(),
+                getStudentFacultyMapping()
+            ]);
+
             console.log('Sample student data:', studentsData.slice(0, 3).map(s => ({
                 name: s.name,
                 imageId: s.imageId,
                 imageUrl: s.imageUrl,
                 hasImageId: !!s.imageId,
-                hasImageUrl: !!s.imageUrl
+                hasImageUrl: !!s.imageUrl,
+                mentorId: s.mentorId || 'No mentor'
             })));
+
             setAllStudents(studentsData);
+
+            // Create faculty lookup map by facultyId
+            const map = new Map<string, Faculty>();
+            facultiesData.forEach(faculty => {
+                if (faculty.facultyId) {
+                    map.set(faculty.facultyId, faculty);
+                }
+            });
+            setFacultyMap(map);
+            console.log(`Loaded ${map.size} faculties for mentor lookup`);
+
+            // Create student -> facultyId map from mappingData (object)
+            const s2f = new Map<string, string>();
+            Object.keys(mappingData || {}).forEach(studentId => {
+                const facultyId = mappingData[studentId];
+                if (facultyId) s2f.set(studentId, facultyId);
+            });
+            setStudentToFacultyMap(s2f);
+            console.log(`Loaded ${s2f.size} student->faculty mappings`);
         } catch (error) {
-            console.error("Error loading students:", error);
+            console.error("Error loading data:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const loadAllFaculties = async () => {
+        setLoading(true);
+        try {
+            const facultiesData = await getAllFaculties();
+            setAllFaculties(facultiesData || []);
+        } catch (error) {
+            console.error("Error loading faculties:", error);
         } finally {
             setLoading(false);
         }
@@ -88,6 +154,31 @@ export default function StudentDirectory() {
         });
 
         setFilteredStudents(filtered);
+    };
+
+    const filterAndSortFaculties = () => {
+        let filtered = allFaculties;
+
+        if (searchTerm.trim() !== "") {
+            filtered = allFaculties.filter(faculty =>
+                faculty.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                faculty.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                (faculty.department || '').toLowerCase().includes(searchTerm.toLowerCase())
+            );
+        }
+
+        filtered = [...filtered].sort((a, b) => {
+            switch (sortBy) {
+                case "name":
+                    return a.name.localeCompare(b.name);
+                case "department":
+                    return (a.department || '').localeCompare(b.department || '');
+                default:
+                    return 0;
+            }
+        });
+
+        setFilteredFaculties(filtered);
     };
 
     const handleViewProfile = (student: Student) => {
@@ -176,9 +267,21 @@ export default function StudentDirectory() {
             <div className="flex flex-col w-full max-w-7xl mx-auto py-10 px-4 md:px-8">
                 <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
                     <div>
-                        <h1 className="text-3xl font-bold">Student Directory</h1>
+                        <div className="flex items-center gap-3 mb-2">
+                            <button
+                                onClick={() => setMode('students')}
+                                className={`px-4 py-2 rounded-lg font-medium ${mode === 'students' ? 'bg-blue-600 text-white' : 'bg-transparent border border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-200'}`}>
+                                Student Directory
+                            </button>
+                            <button
+                                onClick={() => setMode('faculties')}
+                                className={`px-4 py-2 rounded-lg font-medium ${mode === 'faculties' ? 'bg-green-600 text-white' : 'bg-transparent border border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-200'}`}>
+                                Faculty Directory
+                            </button>
+                        </div>
+                        <h1 className="text-3xl font-bold">{mode === 'students' ? 'Student Directory' : 'Faculty Directory'}</h1>
                         <p className="text-gray-500 dark:text-gray-400 text-base">
-                            {isFaculty ? "Browse all students in the college" : "Explore your fellow students"}
+                            {mode === 'students' ? (isFaculty ? "Browse all students in the college" : "Explore your fellow students") : "Browse all faculties and mentors"}
                         </p>
                     </div>
                     <div className="flex items-center gap-2">
@@ -226,23 +329,23 @@ export default function StudentDirectory() {
                 {/* Stats */}
                 <section className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                     <div className="rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 p-5 border border-gray-200/50 dark:border-gray-800/50 flex flex-col items-start">
-                        <span className="text-sm text-gray-500 dark:text-gray-400 font-medium">Total Students</span>
-                        <span className="text-2xl font-bold mt-1 mb-1 bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400 bg-clip-text text-transparent">{allStudents.length}</span>
+                        <span className="text-sm text-gray-500 dark:text-gray-400 font-medium">{mode === 'students' ? 'Total Students' : 'Total Faculties'}</span>
+                        <span className="text-2xl font-bold mt-1 mb-1 bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400 bg-clip-text text-transparent">{mode === 'students' ? allStudents.length : allFaculties.length}</span>
                     </div>
                     <div className="rounded-2xl bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 p-5 border border-gray-200/50 dark:border-gray-800/50 flex flex-col items-start">
                         <span className="text-sm text-gray-500 dark:text-gray-400 font-medium">Filtered Results</span>
-                        <span className="text-2xl font-bold mt-1 mb-1 bg-gradient-to-r from-green-600 to-emerald-600 dark:from-green-400 dark:to-emerald-400 bg-clip-text text-transparent">{filteredStudents.length}</span>
+                        <span className="text-2xl font-bold mt-1 mb-1 bg-gradient-to-r from-green-600 to-emerald-600 dark:from-green-400 dark:to-emerald-400 bg-clip-text text-transparent">{mode === 'students' ? filteredStudents.length : filteredFaculties.length}</span>
                     </div>
                     <div className="rounded-2xl bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-950/30 dark:to-violet-950/30 p-5 border border-gray-200/50 dark:border-gray-800/50 flex flex-col items-start">
                         <span className="text-sm text-gray-500 dark:text-gray-400 font-medium">Departments</span>
                         <span className="text-2xl font-bold mt-1 mb-1 bg-gradient-to-r from-purple-600 to-violet-600 dark:from-purple-400 dark:to-violet-400 bg-clip-text text-transparent">
-                            {new Set(allStudents.map(s => s.department)).size}
+                            {mode === 'students' ? new Set(allStudents.map(s => s.department)).size : new Set(allFaculties.map(f => f.department)).size}
                         </span>
                     </div>
                     <div className="rounded-2xl bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950/30 dark:to-amber-950/30 p-5 border border-gray-200/50 dark:border-gray-800/50 flex flex-col items-start">
                         <span className="text-sm text-gray-500 dark:text-gray-400 font-medium">Schools</span>
                         <span className="text-2xl font-bold mt-1 mb-1 bg-gradient-to-r from-orange-600 to-amber-600 dark:from-orange-400 dark:to-amber-400 bg-clip-text text-transparent">
-                            {new Set(allStudents.map(s => s.school)).size}
+                            {mode === 'students' ? new Set(allStudents.map(s => s.school)).size : new Set(allFaculties.map(f => f.school)).size}
                         </span>
                     </div>
                 </section>
@@ -251,7 +354,9 @@ export default function StudentDirectory() {
                 {loading && (
                     <div className="flex items-center justify-center py-12">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                        <span className="ml-2 text-gray-600 dark:text-gray-400">Loading students...</span>
+                        <span className="ml-2 text-gray-600 dark:text-gray-400">
+                            Loading {mode === 'students' ? 'students' : 'faculties'}...
+                        </span>
                     </div>
                 )}
 
@@ -270,224 +375,317 @@ export default function StudentDirectory() {
                             )}
                         </div>
 
-                        {filteredStudents.length === 0 ? (
-                            <div className="text-center py-12">
-                                <FiSearch className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                                <p className="text-gray-500 dark:text-gray-400">
-                                    {searchTerm ? `No students found matching "${searchTerm}"` : "No students found."}
-                                </p>
-                            </div>
+                        {mode === 'students' ? (
+                            filteredStudents.length === 0 ? (
+                                <div className="text-center py-12">
+                                    <FiSearch className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                                    <p className="text-gray-500 dark:text-gray-400">
+                                        {searchTerm ? `No students found matching "${searchTerm}"` : "No students found."}
+                                    </p>
+                                </div>
+                            ) : (
+                                <>
+                                    {view === 'grid' ? (
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                                            {filteredStudents.map((student) => {
+                                                const cgpa = student.IA1 && student.IA2 && student.EndSem
+                                                    ? Number(((student.IA1 + student.IA2 + student.EndSem) / 3).toFixed(2))
+                                                    : 0;
+
+                                                // Consistent color scheme matching the stats cards
+                                                const colorTheme = {
+                                                    // Blue theme matching "Total Students" card
+                                                    bg: 'from-blue-600 to-indigo-600',
+                                                    accent: 'bg-blue-50 dark:bg-blue-900/20',
+                                                    // Green theme matching "Filtered Results" card for buttons
+                                                    buttonBg: 'from-green-600 to-emerald-600'
+                                                };
+
+                                                return (
+                                                    <div key={student.email} className="group relative overflow-hidden rounded-lg bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border border-blue-200/60 dark:border-blue-700/60 shadow-sm hover:shadow-md transition-all duration-300">
+
+                                                        <div className="p-6 flex flex-col gap-4">
+                                                            {/* Header with avatar and basic info */}
+                                                            <div className="flex items-center gap-4">
+                                                                <Avatar className="h-12 w-12 rounded-full overflow-hidden">
+                                                                    {student.imageId && student.imageId.trim() !== '' && student.imageId !== 'undefined' ? (
+                                                                        <AvatarImage
+                                                                            src={getStudentImageUrl(student.imageId)}
+                                                                            alt={`${student.name}'s profile picture`}
+                                                                            className="object-cover w-full h-full rounded-full"
+                                                                            onLoad={() => console.log('Grid: Image loaded successfully for:', student.name, student.studentId)}
+                                                                            onError={(e) => {
+                                                                                console.log('Grid: Image failed to load for:', student.name);
+                                                                                e.currentTarget.style.display = 'none';
+                                                                            }}
+                                                                        />
+                                                                    ) : student.imageUrl && student.imageUrl.trim() !== '' && student.imageUrl !== 'undefined' ? (
+                                                                        <AvatarImage
+                                                                            src={student.imageUrl}
+                                                                            alt={`${student.name}'s profile picture`}
+                                                                            className="object-cover w-full h-full rounded-full"
+                                                                            onLoad={() => console.log('Grid: Direct imageUrl loaded for:', student.name)}
+                                                                            onError={(e) => {
+                                                                                console.log('Grid: Direct imageUrl failed for:', student.name);
+                                                                                e.currentTarget.style.display = 'none';
+                                                                            }}
+                                                                        />
+                                                                    ) : null}
+                                                                    <AvatarFallback className={`bg-gradient-to-br ${colorTheme.bg} text-white font-semibold text-sm rounded-full flex items-center justify-center`}>
+                                                                        {getInitials(student.name)}
+                                                                    </AvatarFallback>
+                                                                </Avatar>
+                                                                <div className="flex-1 min-w-0">
+                                                                    <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate">{student.name}</h3>
+                                                                    <p className="text-sm text-gray-500 dark:text-gray-400">{student.rollNo}</p>
+                                                                </div>
+                                                                {cgpa > 0 && (
+                                                                    <div className="flex flex-col items-center">
+                                                                        <div className="px-2.5 py-1 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-medium text-sm">
+                                                                            {cgpa}
+                                                                        </div>
+                                                                        <span className="text-xs text-gray-400 mt-1">CGPA</span>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+
+                                                            {/* Contact and mentor info */}
+                                                            <div className="space-y-2">
+                                                                <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300">
+                                                                    <div className={`p-1.5 rounded-md ${colorTheme.accent}`}>
+                                                                        <FiMail className="w-3.5 h-3.5 text-gray-500" />
+                                                                    </div>
+                                                                    <span className="truncate">{student.email}</span>
+                                                                </div>
+                                                                <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300">
+                                                                    <div className={`p-1.5 rounded-md ${colorTheme.accent}`}>
+                                                                        <FiUser className="w-3.5 h-3.5 text-gray-500" />
+                                                                    </div>
+                                                                    <span className="truncate">
+                                                                        {(() => {
+                                                                            const docId = ((student as any).$id as string) || student.studentId;
+                                                                            const mappedFacultyId = studentToFacultyMap.get(docId) || student.mentorId;
+                                                                            const faculty = mappedFacultyId ? facultyMap.get(mappedFacultyId) : null;
+                                                                            return `Mentor: ${faculty?.name || 'Not Assigned'}`;
+                                                                        })()}
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Status line */}
+                                                            <div className="flex items-center justify-between">
+                                                                <span className="text-sm text-gray-500 dark:text-gray-400">Status:</span>
+                                                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 border border-green-200 dark:border-green-700">
+                                                                    Active
+                                                                </span>
+                                                            </div>
+
+                                                            {/* Action button */}
+                                                            <div className="pt-3 border-t border-gray-100 dark:border-gray-800">
+                                                                <button
+                                                                    onClick={() => handleViewProfile(student)}
+                                                                    className="w-full py-2.5 px-4 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium text-sm hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 shadow-sm"
+                                                                >
+                                                                    View Profile
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    ) : (
+                                        <div className="flex flex-col gap-4">
+                                            {filteredStudents.map((student) => {
+                                                const cgpa = student.IA1 && student.IA2 && student.EndSem
+                                                    ? Number(((student.IA1 + student.IA2 + student.EndSem) / 3).toFixed(2))
+                                                    : 0;
+
+                                                // Consistent color scheme matching the stats cards
+                                                const colorTheme = {
+                                                    // Blue theme matching "Total Students" card
+                                                    bg: 'from-blue-600 to-indigo-600',
+                                                    accent: 'bg-blue-50 dark:bg-blue-900/20',
+                                                    // Green theme matching "Filtered Results" card for buttons
+                                                    buttonBg: 'from-green-600 to-emerald-600'
+                                                };
+
+                                                return (
+                                                    <div key={student.email} className="group relative overflow-hidden rounded-lg bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border border-blue-200/60 dark:border-blue-700/60 shadow-sm hover:shadow-md transition-all duration-300">
+                                                        <div className="p-6 flex flex-col gap-4">
+                                                            {/* Header with avatar and basic info */}
+                                                            <div className="flex items-center gap-4">
+                                                                <Avatar className="h-12 w-12 rounded-full overflow-hidden">
+                                                                    {student.imageId && student.imageId.trim() !== '' && student.imageId !== 'undefined' ? (
+                                                                        <AvatarImage
+                                                                            src={getStudentImageUrl(student.imageId)}
+                                                                            alt={`${student.name}'s profile picture`}
+                                                                            className="object-cover w-full h-full rounded-full"
+                                                                            onLoad={() => console.log('List: Image loaded successfully for:', student.name)}
+                                                                            onError={(e) => {
+                                                                                console.log('List: Image failed to load for:', student.name);
+                                                                                e.currentTarget.style.display = 'none';
+                                                                            }}
+                                                                        />
+                                                                    ) : student.imageUrl && student.imageUrl.trim() !== '' && student.imageUrl !== 'undefined' ? (
+                                                                        <AvatarImage
+                                                                            src={student.imageUrl}
+                                                                            alt={`${student.name}'s profile picture`}
+                                                                            className="object-cover w-full h-full rounded-full"
+                                                                            onLoad={() => console.log('List: Direct imageUrl loaded for:', student.name)}
+                                                                            onError={(e) => {
+                                                                                console.log('List: Direct imageUrl failed for:', student.name);
+                                                                                e.currentTarget.style.display = 'none';
+                                                                            }}
+                                                                        />
+                                                                    ) : null}
+                                                                    <AvatarFallback className={`bg-gradient-to-br ${colorTheme.bg} text-white font-semibold text-sm rounded-full flex items-center justify-center`}>
+                                                                        {getInitials(student.name)}
+                                                                    </AvatarFallback>
+                                                                </Avatar>
+                                                                <div className="flex-1 min-w-0">
+                                                                    <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate">{student.name}</h3>
+                                                                    <p className="text-sm text-gray-500 dark:text-gray-400">{student.rollNo}</p>
+                                                                </div>
+                                                                {cgpa > 0 && (
+                                                                    <div className="flex flex-col items-center">
+                                                                        <div className="px-2.5 py-1 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-medium text-sm">
+                                                                            {cgpa}
+                                                                        </div>
+                                                                        <span className="text-xs text-gray-400 mt-1">CGPA</span>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+
+                                                            {/* Contact and mentor info */}
+                                                            <div className="space-y-2">
+                                                                <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300">
+                                                                    <div className={`p-1.5 rounded-md ${colorTheme.accent}`}>
+                                                                        <FiMail className="w-3.5 h-3.5 text-gray-500" />
+                                                                    </div>
+                                                                    <span className="truncate">{student.email}</span>
+                                                                </div>
+                                                                <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300">
+                                                                    <div className={`p-1.5 rounded-md ${colorTheme.accent}`}>
+                                                                        <FiUser className="w-3.5 h-3.5 text-gray-500" />
+                                                                    </div>
+                                                                    <span className="truncate">
+                                                                        {(() => {
+                                                                            const docId = ((student as any).$id as string) || student.studentId;
+                                                                            const mappedFacultyId = studentToFacultyMap.get(docId) || student.mentorId;
+                                                                            const faculty = mappedFacultyId ? facultyMap.get(mappedFacultyId) : null;
+                                                                            return `Mentor: ${faculty?.name || 'Not Assigned'}`;
+                                                                        })()}
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Status line */}
+                                                            <div className="flex items-center justify-between">
+                                                                <span className="text-sm text-gray-500 dark:text-gray-400">Status:</span>
+                                                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 border border-green-200 dark:border-green-700">
+                                                                    Active
+                                                                </span>
+                                                            </div>
+
+                                                            {/* Action button */}
+                                                            <div className="pt-3 border-t border-gray-100 dark:border-gray-800">
+                                                                <button
+                                                                    onClick={() => handleViewProfile(student)}
+                                                                    className="w-full py-2.5 px-4 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium text-sm hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 shadow-sm"
+                                                                >
+                                                                    View Profile
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+                                </>
+                            )
                         ) : (
-                            <>
-                                {view === 'grid' ? (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                                        {filteredStudents.map((student) => {
-                                            const cgpa = student.IA1 && student.IA2 && student.EndSem
-                                                ? Number(((student.IA1 + student.IA2 + student.EndSem) / 3).toFixed(2))
-                                                : 0;
+                            // Faculties view
+                            filteredFaculties.length === 0 ? (
+                                <div className="text-center py-12">
+                                    <FiSearch className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                                    <p className="text-gray-500 dark:text-gray-400">
+                                        {searchTerm ? `No faculties found matching "${searchTerm}"` : "No faculties found."}
+                                    </p>
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                                    {filteredFaculties.map((faculty) => (
+                                        <div key={faculty.email || faculty.facultyId} className="group relative overflow-hidden rounded-lg bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 border border-green-200/60 dark:border-green-700/60 shadow-sm hover:shadow-md transition-all duration-300">
+                                            <div className="p-6 flex flex-col gap-4">
+                                                <div className="flex items-center gap-4">
+                                                    <Avatar className="h-12 w-12 rounded-full overflow-hidden">
+                                                        {faculty.imageId && faculty.imageId.trim() !== '' && faculty.imageId !== 'undefined' ? (
+                                                            <AvatarImage
+                                                                src={getFacultyImageUrl(faculty.imageId)}
+                                                                alt={`${faculty.name}'s profile picture`}
+                                                                className="object-cover w-full h-full rounded-full"
+                                                            />
+                                                        ) : faculty.imageUrl && faculty.imageUrl.trim() !== '' && faculty.imageUrl !== 'undefined' ? (
+                                                            <AvatarImage
+                                                                src={faculty.imageUrl}
+                                                                alt={`${faculty.name}'s profile picture`}
+                                                                className="object-cover w-full h-full rounded-full"
 
-                                            // Consistent color scheme matching the stats cards
-                                            const colorTheme = {
-                                                // Blue theme matching "Total Students" card
-                                                bg: 'from-blue-600 to-indigo-600',
-                                                accent: 'bg-blue-50 dark:bg-blue-900/20',
-                                                // Green theme matching "Filtered Results" card for buttons
-                                                buttonBg: 'from-green-600 to-emerald-600'
-                                            };
-
-                                            return (
-                                                <div key={student.email} className="group relative overflow-hidden rounded-lg bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border border-blue-200/60 dark:border-blue-700/60 shadow-sm hover:shadow-md transition-all duration-300">
-
-                                                    <div className="p-6 flex flex-col gap-4">
-                                                        {/* Header with avatar and basic info */}
-                                                        <div className="flex items-center gap-4">
-                                                            <Avatar className="h-12 w-12 rounded-full overflow-hidden">
-                                                                {student.imageId && student.imageId.trim() !== '' && student.imageId !== 'undefined' ? (
-                                                                    <AvatarImage
-                                                                        src={getStudentImageUrl(student.imageId)}
-                                                                        alt={`${student.name}'s profile picture`}
-                                                                        className="object-cover w-full h-full rounded-full"
-                                                                        onLoad={() => console.log('Grid: Image loaded successfully for:', student.name, student.studentId)}
-                                                                        onError={(e) => {
-                                                                            console.log('Grid: Image failed to load for:', student.name);
-                                                                            e.currentTarget.style.display = 'none';
-                                                                        }}
-                                                                    />
-                                                                ) : student.imageUrl && student.imageUrl.trim() !== '' && student.imageUrl !== 'undefined' ? (
-                                                                    <AvatarImage
-                                                                        src={student.imageUrl}
-                                                                        alt={`${student.name}'s profile picture`}
-                                                                        className="object-cover w-full h-full rounded-full"
-                                                                        onLoad={() => console.log('Grid: Direct imageUrl loaded for:', student.name)}
-                                                                        onError={(e) => {
-                                                                            console.log('Grid: Direct imageUrl failed for:', student.name);
-                                                                            e.currentTarget.style.display = 'none';
-                                                                        }}
-                                                                    />
-                                                                ) : null}
-                                                                <AvatarFallback className={`bg-gradient-to-br ${colorTheme.bg} text-white font-semibold text-sm rounded-full flex items-center justify-center`}>
-                                                                    {getInitials(student.name)}
-                                                                </AvatarFallback>
-                                                            </Avatar>
-                                                            <div className="flex-1 min-w-0">
-                                                                <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate">{student.name}</h3>
-                                                                <p className="text-sm text-gray-500 dark:text-gray-400">{student.rollNo}</p>
-                                                            </div>
-                                                            {cgpa > 0 && (
-                                                                <div className="flex flex-col items-center">
-                                                                    <div className="px-2.5 py-1 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-medium text-sm">
-                                                                        {cgpa}
-                                                                    </div>
-                                                                    <span className="text-xs text-gray-400 mt-1">CGPA</span>
-                                                                </div>
-                                                            )}
-                                                        </div>
-
-                                                        {/* Contact and mentor info */}
-                                                        <div className="space-y-2">
-                                                            <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300">
-                                                                <div className={`p-1.5 rounded-md ${colorTheme.accent}`}>
-                                                                    <FiMail className="w-3.5 h-3.5 text-gray-500" />
-                                                                </div>
-                                                                <span className="truncate">{student.email}</span>
-                                                            </div>
-                                                            <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300">
-                                                                <div className={`p-1.5 rounded-md ${colorTheme.accent}`}>
-                                                                    <FiUser className="w-3.5 h-3.5 text-gray-500" />
-                                                                </div>
-                                                                <span className="truncate">
-                                                                    Mentor: {student.mentorId ? "Faculty Name" : "Not Assigned"}
-                                                                </span>
-                                                            </div>
-                                                        </div>
-
-                                                        {/* Status line */}
-                                                        <div className="flex items-center justify-between">
-                                                            <span className="text-sm text-gray-500 dark:text-gray-400">Status:</span>
-                                                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 border border-green-200 dark:border-green-700">
-                                                                Active
-                                                            </span>
-                                                        </div>
-
-                                                        {/* Action button */}
-                                                        <div className="pt-3 border-t border-gray-100 dark:border-gray-800">
-                                                            <button
-                                                                onClick={() => handleViewProfile(student)}
-                                                                className="w-full py-2.5 px-4 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium text-sm hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 shadow-sm"
-                                                            >
-                                                                View Profile
-                                                            </button>
-                                                        </div>
+                                                                onLoad={() => console.log('Grid: Faculty image loaded successfully for:', faculty.name, faculty.facultyId)}
+                                                                onError={(e) => {
+                                                                    console.log('Grid: Image failed to load for:', faculty.name, faculty.facultyId);
+                                                                    e.currentTarget.style.display = 'none';
+                                                                }}
+                                                            />
+                                                        ) : null}
+                                                        <AvatarFallback className={`bg-gradient-to-br from-green-600 to-emerald-600 text-white font-semibold text-sm rounded-full flex items-center justify-center`}>
+                                                            {getInitials(faculty.name)}
+                                                        </AvatarFallback>
+                                                    </Avatar>
+                                                    <div className="flex-1 min-w-0">
+                                                        <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate">{faculty.name}</h3>
+                                                        <p className="text-sm text-gray-500 dark:text-gray-400">{faculty.designation || faculty.department}</p>
                                                     </div>
                                                 </div>
-                                            );
-                                        })}
-                                    </div>
-                                ) : (
-                                    <div className="flex flex-col gap-4">
-                                        {filteredStudents.map((student) => {
-                                            const cgpa = student.IA1 && student.IA2 && student.EndSem
-                                                ? Number(((student.IA1 + student.IA2 + student.EndSem) / 3).toFixed(2))
-                                                : 0;
 
-                                            // Consistent color scheme matching the stats cards
-                                            const colorTheme = {
-                                                // Blue theme matching "Total Students" card
-                                                bg: 'from-blue-600 to-indigo-600',
-                                                accent: 'bg-blue-50 dark:bg-blue-900/20',
-                                                // Green theme matching "Filtered Results" card for buttons
-                                                buttonBg: 'from-green-600 to-emerald-600'
-                                            };
-
-                                            return (
-                                                <div key={student.email} className="group relative overflow-hidden rounded-lg bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border border-blue-200/60 dark:border-blue-700/60 shadow-sm hover:shadow-md transition-all duration-300">
-                                                    <div className="p-6 flex flex-col gap-4">
-                                                        {/* Header with avatar and basic info */}
-                                                        <div className="flex items-center gap-4">
-                                                            <Avatar className="h-12 w-12 rounded-full overflow-hidden">
-                                                                {student.imageId && student.imageId.trim() !== '' && student.imageId !== 'undefined' ? (
-                                                                    <AvatarImage
-                                                                        src={getStudentImageUrl(student.imageId)}
-                                                                        alt={`${student.name}'s profile picture`}
-                                                                        className="object-cover w-full h-full rounded-full"
-                                                                        onLoad={() => console.log('List: Image loaded successfully for:', student.name)}
-                                                                        onError={(e) => {
-                                                                            console.log('List: Image failed to load for:', student.name);
-                                                                            e.currentTarget.style.display = 'none';
-                                                                        }}
-                                                                    />
-                                                                ) : student.imageUrl && student.imageUrl.trim() !== '' && student.imageUrl !== 'undefined' ? (
-                                                                    <AvatarImage
-                                                                        src={student.imageUrl}
-                                                                        alt={`${student.name}'s profile picture`}
-                                                                        className="object-cover w-full h-full rounded-full"
-                                                                        onLoad={() => console.log('List: Direct imageUrl loaded for:', student.name)}
-                                                                        onError={(e) => {
-                                                                            console.log('List: Direct imageUrl failed for:', student.name);
-                                                                            e.currentTarget.style.display = 'none';
-                                                                        }}
-                                                                    />
-                                                                ) : null}
-                                                                <AvatarFallback className={`bg-gradient-to-br ${colorTheme.bg} text-white font-semibold text-sm rounded-full flex items-center justify-center`}>
-                                                                    {getInitials(student.name)}
-                                                                </AvatarFallback>
-                                                            </Avatar>
-                                                            <div className="flex-1 min-w-0">
-                                                                <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate">{student.name}</h3>
-                                                                <p className="text-sm text-gray-500 dark:text-gray-400">{student.rollNo}</p>
-                                                            </div>
-                                                            {cgpa > 0 && (
-                                                                <div className="flex flex-col items-center">
-                                                                    <div className="px-2.5 py-1 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-medium text-sm">
-                                                                        {cgpa}
-                                                                    </div>
-                                                                    <span className="text-xs text-gray-400 mt-1">CGPA</span>
-                                                                </div>
-                                                            )}
+                                                <div className="space-y-2">
+                                                    <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300">
+                                                        <div className={`p-1.5 rounded-md bg-green-50 dark:bg-green-900/20`}>
+                                                            <FiMail className="w-3.5 h-3.5 text-gray-500" />
                                                         </div>
-
-                                                        {/* Contact and mentor info */}
-                                                        <div className="space-y-2">
-                                                            <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300">
-                                                                <div className={`p-1.5 rounded-md ${colorTheme.accent}`}>
-                                                                    <FiMail className="w-3.5 h-3.5 text-gray-500" />
-                                                                </div>
-                                                                <span className="truncate">{student.email}</span>
-                                                            </div>
-                                                            <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300">
-                                                                <div className={`p-1.5 rounded-md ${colorTheme.accent}`}>
-                                                                    <FiUser className="w-3.5 h-3.5 text-gray-500" />
-                                                                </div>
-                                                                <span className="truncate">
-                                                                    Mentor: {student.mentorId ? "Faculty Name" : "Not Assigned"}
-                                                                </span>
-                                                            </div>
+                                                        <span className="truncate">{faculty.email}</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300">
+                                                        <div className={`p-1.5 rounded-md bg-green-50 dark:bg-green-900/20`}>
+                                                            <FiUser className="w-3.5 h-3.5 text-gray-500" />
                                                         </div>
-
-                                                        {/* Status line */}
-                                                        <div className="flex items-center justify-between">
-                                                            <span className="text-sm text-gray-500 dark:text-gray-400">Status:</span>
-                                                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 border border-green-200 dark:border-green-700">
-                                                                Active
-                                                            </span>
-                                                        </div>
-
-                                                        {/* Action button */}
-                                                        <div className="pt-3 border-t border-gray-100 dark:border-gray-800">
-                                                            <button
-                                                                onClick={() => handleViewProfile(student)}
-                                                                className="w-full py-2.5 px-4 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium text-sm hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 shadow-sm"
-                                                            >
-                                                                View Profile
-                                                            </button>
-                                                        </div>
+                                                        <span className="truncate">{faculty.school || ''} {faculty.department ? `• ${faculty.department}` : ''}</span>
                                                     </div>
                                                 </div>
-                                            );
-                                        })}
-                                    </div>
-                                )}
-                            </>
+
+                                                <div className="pt-3 border-t border-gray-100 dark:border-gray-800">
+                                                    <div className="flex gap-2">
+                                                        <button
+                                                            onClick={() => { setSelectedFacultyId(faculty.facultyId); setIsFacultyDetailModalOpen(true); }}
+                                                            className="flex-1 py-2.5 px-4 rounded-lg bg-gradient-to-r from-green-600 to-emerald-600 text-white font-medium text-sm hover:from-green-700 hover:to-emerald-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 shadow-sm"
+                                                        >
+                                                            View Profile
+                                                        </button>
+                                                        <button
+                                                            onClick={() => { setSelectedFaculty(faculty); setIsMenteesModalOpen(true); }}
+                                                            className="py-2.5 px-4 rounded-lg bg-white/80 border border-gray-200 text-green-700 text-sm hover:bg-gray-100 transition"
+                                                        >
+                                                            View Mentees
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )
                         )}
                     </section>
                 )}
@@ -499,6 +697,22 @@ export default function StudentDirectory() {
                     student={selectedStudent}
                     isOpen={isModalOpen}
                     onClose={handleCloseModal}
+                />
+            )}
+            {/* Mentees Modal */}
+            {selectedFaculty && (
+                <MenteesModal
+                    faculty={selectedFaculty}
+                    isOpen={isMenteesModalOpen}
+                    onClose={() => { setIsMenteesModalOpen(false); setSelectedFaculty(null); }}
+                />
+            )}
+            {/* Faculty Detail Modal */}
+            {selectedFacultyId && (
+                <FacultyDetailModal
+                    facultyId={selectedFacultyId}
+                    isOpen={isFacultyDetailModalOpen}
+                    onClose={() => { setIsFacultyDetailModalOpen(false); setSelectedFacultyId(null); }}
                 />
             )}
         </div>

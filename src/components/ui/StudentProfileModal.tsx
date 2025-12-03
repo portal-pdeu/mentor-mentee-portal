@@ -6,7 +6,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import Modal from './Modal';
 import { Student, Faculty } from '@/types';
 import { getStudentImageUrl, getInitials } from '@/lib/imageUtils';
-import { getFacultyByDocId } from '@/app/student-directory/actions';
+import { getFacultyByFacultyId, getFacultyForStudent } from '@/app/student-directory/actions';
 
 interface StudentProfileModalProps {
     student: Student | null;
@@ -19,25 +19,34 @@ const StudentProfileModal: React.FC<StudentProfileModalProps> = ({ student, isOp
     const [mentorLoading, setMentorLoading] = useState(false);
 
     useEffect(() => {
-        if (isOpen && student?.mentorId) {
-            loadMentorDetails(student.mentorId);
+        // When modal opens, fetch mapping (student -> faculty) from cloud mapping project
+        // then fetch faculty details by facultyId attribute. This avoids requiring a
+        // mentorId field on the Student collection.
+        if (isOpen && student) {
+            (async () => {
+                setMentorLoading(true);
+                try {
+                    // 1) ask mapping project for facultyId for this student
+                    const facultyId = await getFacultyForStudent(student.studentId || (student as any).$id);
+                    if (!facultyId) {
+                        setMentor(null);
+                        return;
+                    }
+
+                    // 2) fetch faculty details by facultyId attribute
+                    const mentorData = await getFacultyByFacultyId(facultyId);
+                    setMentor(mentorData);
+                } catch (error) {
+                    console.error('Error loading mentor info for student:', error);
+                    setMentor(null);
+                } finally {
+                    setMentorLoading(false);
+                }
+            })();
         } else {
             setMentor(null);
         }
-    }, [isOpen, student?.mentorId]);
-
-    const loadMentorDetails = async (mentorId: string) => {
-        setMentorLoading(true);
-        try {
-            const mentorData = await getFacultyByDocId(mentorId);
-            setMentor(mentorData);
-        } catch (error) {
-            console.error("Error fetching mentor details:", error);
-            setMentor(null);
-        } finally {
-            setMentorLoading(false);
-        }
-    };
+    }, [isOpen, student]);
 
     if (!student) {
         return null;
